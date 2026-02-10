@@ -34,25 +34,25 @@ jobs:
       contents: read
     steps:
     - uses: actions/checkout@v4
-    - uses: pnpm/action-setup@v4
-      with:
-        version: 10
-    - uses: actions/setup-node@v4
+
+    - name: Setup Node.js for Migrations
+      uses: actions/setup-node@v4
       with:
         node-version: 20
-        cache: 'pnpm'
-    - run: pnpm install --frozen-lockfile
+
+    - name: Install pnpm for Migrations
+      uses: pnpm/action-setup@v4
+      with:
+        version: 10
+
+    - name: Install Dependencies for Migrations
+      run: pnpm install --frozen-lockfile
 
     - name: Apply Database Migrations
       run: pnpm exec prisma migrate deploy
       env:
         DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        DIRECT_URL: ${{ secrets.DIRECT_URL }} # Required for migrations
-
-    - name: Generate Prisma Client
-      run: pnpm exec prisma generate
-      env:
-        DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        DIRECT_URL: ${{ secrets.DIRECT_URL }}
 
     - name: Install OIDC Client
       run: npm install @actions/core@1.6.0 @actions/http-client
@@ -66,12 +66,6 @@ jobs:
           return await coredemo.getIDToken()
         result-encoding: string
 
-    - name: Build Next.js App
-      run: pnpm build
-      env:
-        DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        DIRECT_URL: ${{ secrets.DIRECT_URL }}
-
     - name: Build And Deploy
       id: builddeploy
       uses: Azure/static-web-apps-deploy@v1
@@ -79,9 +73,8 @@ jobs:
         azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_JOLLY_CLIFF_0D07A3A1E }}
         action: "upload"
         app_location: "/"
+        api_location: ""
         output_location: ""
-        skip_app_build: true
-        skip_api_build: true
         github_id_token: ${{ steps.idtoken.outputs.result }}
       env:
         DATABASE_URL: ${{ secrets.DATABASE_URL }}
