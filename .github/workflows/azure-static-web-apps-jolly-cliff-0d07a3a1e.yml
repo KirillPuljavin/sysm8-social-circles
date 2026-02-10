@@ -66,6 +66,12 @@ jobs:
           return await coredemo.getIDToken()
         result-encoding: string
 
+    - name: Build Next.js App
+      run: pnpm build
+      env:
+        DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        DIRECT_URL: ${{ secrets.DIRECT_URL }}
+
     - name: Build And Deploy
       id: builddeploy
       uses: Azure/static-web-apps-deploy@v1
@@ -74,6 +80,7 @@ jobs:
         action: "upload"
         app_location: "/"
         output_location: ".next"
+        skip_app_build: true
         github_id_token: ${{ steps.idtoken.outputs.result }}
       env:
         DATABASE_URL: ${{ secrets.DATABASE_URL }}
