@@ -131,7 +131,7 @@ export async function PATCH(
   } catch (error) {
     if (error instanceof ZodError) {
       return NextResponse.json(
-        { error: error.errors[0].message },
+        { error: error.issues[0].message },
         { status: 400 },
       );
     }
@@ -156,7 +156,7 @@ export async function PATCH(
     },
   });
 
-  // Step 7: Return updated server
+  // Step 4: Return updated server
   return NextResponse.json({
     id: server.id,
     name: server.name,
@@ -164,7 +164,6 @@ export async function PATCH(
     isRestricted: server.isRestricted,
     owner: server.owner,
     createdAt: server.createdAt,
-    updatedAt: server.updatedAt,
   });
 }
 
