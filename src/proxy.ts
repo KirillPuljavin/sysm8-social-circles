@@ -1,12 +1,17 @@
-// Route Protection Middleware
+// Route Protection Proxy (Next.js 16+)
 // Protects all routes except "/" (landing page)
 // Redirects unauthenticated users to home
 
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // CRITICAL: Allow Azure SWA internal health checks
+  if (pathname.startsWith("/.swa/")) {
+    return NextResponse.next();
+  }
 
   // Public routes (no auth required)
   const publicRoutes = ["/", "/.auth/login/github", "/.auth/login/google", "/.auth/logout"];
@@ -49,16 +54,17 @@ export function middleware(request: NextRequest) {
   return NextResponse.next();
 }
 
-// Apply middleware to all routes except static assets and API routes
+// Apply middleware to all routes except static assets and Azure SWA internals
 export const config = {
   matcher: [
     /*
      * Match all request paths except:
+     * - .swa (Azure SWA internal health checks) - CRITICAL
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - public folder
      */
-    "/((?!_next/static|_next/image|favicon.ico|public).*)",
+    "/((?!.swa|_next/static|_next/image|favicon.ico|public).*)",
   ],
 };
