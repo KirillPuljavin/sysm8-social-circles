@@ -27,7 +27,22 @@ export async function getAuthenticatedUser(headers: Headers): Promise<User | nul
   const header = headers.get("x-ms-client-principal");
 
   if (!header) {
-    // No auth header = anonymous user (should be blocked by staticwebapp.config.json)
+    // Development mode: Always return mock authenticated user
+    // This allows testing the authenticated UI locally
+    if (process.env.NODE_ENV === "development") {
+      const mockUser = await prisma.user.upsert({
+        where: { email: "dev@localhost.local" },
+        update: {},
+        create: {
+          azureId: "dev-mock-123",
+          email: "dev@localhost.local",
+          name: "Dev User",
+        },
+      });
+      return mockUser;
+    }
+
+    // Production: No auth header = anonymous user (blocked by Azure SWA gateway)
     return null;
   }
 
@@ -46,11 +61,11 @@ export async function getAuthenticatedUser(headers: Headers): Promise<User | nul
     return null;
   }
 
-  // JIT Sync: Upsert user in database
+  // JIT Sync: Upsert user in database (keyed on email for multi-provider support)
   const user = await prisma.user.upsert({
-    where: { azureId: principal.userId },
+    where: { email: principal.userDetails },
     update: {
-      email: principal.userDetails,
+      azureId: principal.userId, // Updates to current provider's ID
       name: principal.userDetails.split('@')[0], // Extract name from email
     },
     create: {
