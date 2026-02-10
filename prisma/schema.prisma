@@ -1,0 +1,109 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL") // Uses the Pooler (Port 6543)
+  directUrl = env("DIRECT_URL") // Uses the Direct Connection (Port 5432)
+}
+
+enum MemberRole {
+  OWNER
+  MODERATOR
+  GUEST
+}
+
+model User {
+  id      String  @id @default(uuid())
+  azureId String  @unique
+  email   String  @unique
+  name    String?
+
+  memberships Member[]
+  servers     Server[] @relation("ServerOwner")
+
+  // Global DMs: Decoupled from servers
+  conversationsInitiated Conversation[]  @relation("UserOne")
+  conversationsReceived  Conversation[]  @relation("UserTwo")
+  directMessages         DirectMessage[]
+
+  createdAt DateTime @default(now())
+}
+
+model Server {
+  id         String @id @default(uuid())
+  name       String
+  inviteCode String @unique
+
+  // Security Setting
+  isRestricted Boolean @default(false)
+
+  ownerId String
+  owner   User   @relation("ServerOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+
+  members  Member[]
+  messages Message[]
+
+  createdAt DateTime @default(now())
+}
+
+model Member {
+  id   String     @id @default(uuid())
+  role MemberRole @default(GUEST)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  serverId String
+  server   Server @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+  messages Message[]
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([serverId])
+}
+
+model Message {
+  id      String @id @default(uuid())
+  content String @db.Text
+
+  memberId String
+  member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  serverId String
+  server   Server @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+}
+
+model Conversation {
+  id String @id @default(uuid())
+
+  userOneId String
+  userOne   User   @relation("UserOne", fields: [userOneId], references: [id], onDelete: Cascade)
+
+  userTwoId String
+  userTwo   User   @relation("UserTwo", fields: [userTwoId], references: [id], onDelete: Cascade)
+
+  directMessages DirectMessage[]
+
+  @@unique([userOneId, userTwoId])
+}
+
+model DirectMessage {
+  id      String @id @default(uuid())
+  content String @db.Text
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+}

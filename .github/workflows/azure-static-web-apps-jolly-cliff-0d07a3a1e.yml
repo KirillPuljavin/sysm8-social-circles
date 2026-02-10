@@ -15,27 +15,35 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+
+    - name: Install pnpm
+      uses: pnpm/action-setup@v4
+      with:
+        version: 10
+
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '20'
-        cache: 'npm'
+        cache: 'pnpm'
 
     - name: Install dependencies
-      run: npm ci
+      run: pnpm install --frozen-lockfile
 
     - name: Security Audit
-      run: npm audit --audit-level=high
+      run: pnpm audit --audit-level=high # Security Gate
 
     - name: Lint & Type Check
       run: |
-        npm run lint
-        # npx tsc --noEmit (If using TypeScript, crucial for VG)
+        pnpm lint
+        # pnpm exec tsc --noEmit # Uncomment once TS is ready for VG proof
 
     - name: Run Unit Tests
-      run: npm test
+      run: pnpm test # Quality Gate
 
   build_and_deploy_job:
+    # This job only runs if build_and_test passes
+    needs: [build_and_test]
     if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
     runs-on: ubuntu-latest
     name: Build and Deploy Job
@@ -43,30 +51,48 @@ jobs:
       id-token: write
       contents: read
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       with:
         submodules: true
-        lfs: false
-    - name: Install OIDC Client from Core Package
-      run: npm install @actions/core@1.6.0 @actions/http-client
-    - name: Get Id Token
-      uses: actions/github-script@v6
-      id: idtoken
+
+    - name: Install pnpm
+      uses: pnpm/action-setup@v4
       with:
-        script: |
-          const coredemo = require('@actions/core')
-          return await coredemo.getIDToken()
-        result-encoding: string
+        version: 10
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'pnpm'
+
+    - name: Install dependencies
+      run: pnpm install --frozen-lockfile
+
+    - name: Apply Database Migrations
+      # CRITICAL: Use DIRECT_URL (Port 5432) for migrations
+      # Poolers (Port 6543) do not support session-based locks required by Prisma migrations
+      run: pnpm exec prisma migrate deploy
+      env:
+        DATABASE_URL: ${{ secrets.DIRECT_URL }}
+
+    - name: Generate Prisma Client
+      run: pnpm exec prisma generate
+      env:
+        DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
     - name: Build And Deploy
       id: builddeploy
       uses: Azure/static-web-apps-deploy@v1
       with:
         azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_JOLLY_CLIFF_0D07A3A1E }}
         action: "upload"
-        app_location: "/" # App source code path
-        api_location: "" # Api source code path - optional
-        output_location: "" # Built app content directory - optional
-        github_id_token: ${{ steps.idtoken.outputs.result }}
+        app_location: "/"
+        api_location: ""
+        output_location: ".next"
+      env:
+        # Runtime secrets
+        DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
   close_pull_request_job:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
@@ -77,4 +103,5 @@ jobs:
       id: closepullrequest
       uses: Azure/static-web-apps-deploy@v1
       with:
+        azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_JOLLY_CLIFF_0D07A3A1E }}
         action: "close"
