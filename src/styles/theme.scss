@@ -314,6 +314,7 @@ label {
 // ----------------------------------------------------------------------------
 
 .flex { display: flex; }
+.flex-1 { flex: 1 1 0%; }
 .flex-col { flex-direction: column; }
 .flex-row { flex-direction: row; }
 .items-center { align-items: center; }
