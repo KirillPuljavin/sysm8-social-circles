@@ -6,6 +6,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedUser, isServerMember } from "@/lib/auth";
 import { canEditServer, canDeleteServer } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
+import { updateServerSchema } from "@/lib/validations/server";
+import { ZodError } from "zod";
 
 /**
  * GET /api/servers/[id]
@@ -121,60 +123,28 @@ export async function PATCH(
     );
   }
 
-  // Step 3: Parse request body
-  let body;
+  // Step 3: Parse and validate request body with Zod
+  let validatedData;
   try {
-    body = await request.json();
-  } catch {
+    const body = await request.json();
+    validatedData = updateServerSchema.parse(body);
+  } catch (error) {
+    if (error instanceof ZodError) {
+      return NextResponse.json(
+        { error: error.errors[0].message },
+        { status: 400 },
+      );
+    }
     return NextResponse.json(
-      { error: "Invalid JSON body" },
+      { error: "Invalid request body" },
       { status: 400 },
     );
   }
 
-  const { name, isRestricted } = body;
-
-  // Step 4: Validate input
-  const updates: { name?: string; isRestricted?: boolean } = {};
-
-  if (name !== undefined) {
-    if (typeof name !== "string" || name.trim().length === 0) {
-      return NextResponse.json(
-        { error: "Server name cannot be empty" },
-        { status: 400 },
-      );
-    }
-    if (name.length > 100) {
-      return NextResponse.json(
-        { error: "Server name must be 100 characters or less" },
-        { status: 400 },
-      );
-    }
-    updates.name = name.trim();
-  }
-
-  if (isRestricted !== undefined) {
-    if (typeof isRestricted !== "boolean") {
-      return NextResponse.json(
-        { error: "isRestricted must be a boolean" },
-        { status: 400 },
-      );
-    }
-    updates.isRestricted = isRestricted;
-  }
-
-  // Step 5: Check if there's anything to update
-  if (Object.keys(updates).length === 0) {
-    return NextResponse.json(
-      { error: "No valid fields to update" },
-      { status: 400 },
-    );
-  }
-
-  // Step 6: Update server
+  // Step 4: Update server
   const server = await prisma.server.update({
     where: { id: serverId },
-    data: updates,
+    data: validatedData,
     include: {
       owner: {
         select: {

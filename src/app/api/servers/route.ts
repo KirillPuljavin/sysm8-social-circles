@@ -6,6 +6,8 @@ import { getAuthenticatedUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { MemberRole } from "@prisma/client";
 import { nanoid } from "nanoid";
+import { createServerSchema } from "@/lib/validations/server";
+import { ZodError } from "zod";
 
 /**
  * POST /api/servers
@@ -22,40 +24,30 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Step 2: Parse request body
-  let body;
+  // Step 2: Parse and validate request body with Zod
+  let validatedData;
   try {
-    body = await request.json();
-  } catch {
+    const body = await request.json();
+    validatedData = createServerSchema.parse(body);
+  } catch (error) {
+    if (error instanceof ZodError) {
+      return NextResponse.json(
+        { error: error.errors[0].message },
+        { status: 400 },
+      );
+    }
     return NextResponse.json(
-      { error: "Invalid JSON body" },
+      { error: "Invalid request body" },
       { status: 400 },
     );
   }
 
-  const { name, isRestricted } = body;
-
-  // Step 3: Validate input
-  if (!name || typeof name !== "string" || name.trim().length === 0) {
-    return NextResponse.json(
-      { error: "Server name is required" },
-      { status: 400 },
-    );
-  }
-
-  if (name.length > 100) {
-    return NextResponse.json(
-      { error: "Server name must be 100 characters or less" },
-      { status: 400 },
-    );
-  }
-
-  // Step 4: Create server + owner membership in transaction
+  // Step 3: Create server + owner membership in transaction
   const server = await prisma.server.create({
     data: {
-      name: name.trim(),
+      name: validatedData.name,
       inviteCode: nanoid(10), // Generate unique invite code
-      isRestricted: isRestricted === true,
+      isRestricted: validatedData.isRestricted,
       ownerId: user.id,
       members: {
         create: {

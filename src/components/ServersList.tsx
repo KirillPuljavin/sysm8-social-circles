@@ -4,7 +4,7 @@
 // Full CRUD: Create, Toggle Restriction, Delete
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { createServerSchema } from "@/lib/validations/server";
 
 interface Server {
   id: string;
@@ -20,7 +20,6 @@ interface ServersListProps {
 }
 
 export default function ServersList({ initialServers }: ServersListProps) {
-  const router = useRouter();
   const [servers, setServers] = useState<Server[]>(initialServers);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [createName, setCreateName] = useState("");
@@ -32,12 +31,25 @@ export default function ServersList({ initialServers }: ServersListProps) {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    // Frontend validation with Zod
+    const validation = createServerSchema.safeParse({
+      name: createName,
+      isRestricted: createRestricted,
+    });
+
+    if (!validation.success) {
+      setError(validation.error.errors[0].message);
+      return;
+    }
+
     setLoading(true);
 
     try {
       const res = await fetch("/api/servers", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           name: createName,
           isRestricted: createRestricted,
@@ -49,13 +61,25 @@ export default function ServersList({ initialServers }: ServersListProps) {
         throw new Error(data.error || "Failed to create server");
       }
 
+      const newServer = await res.json();
+
+      // Add new server to local state
+      setServers((prev) => [
+        ...prev,
+        {
+          id: newServer.id,
+          name: newServer.name,
+          inviteCode: newServer.inviteCode,
+          isRestricted: newServer.isRestricted,
+          memberCount: newServer.members.length,
+          role: "OWNER",
+        },
+      ]);
+
       // Reset form and close modal
       setCreateName("");
       setCreateRestricted(false);
       setShowCreateModal(false);
-
-      // Refresh page to show new server
-      router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");
     } finally {
@@ -70,6 +94,7 @@ export default function ServersList({ initialServers }: ServersListProps) {
       const res = await fetch(`/api/servers/${serverId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ isRestricted: !currentValue }),
       });
 
@@ -101,6 +126,7 @@ export default function ServersList({ initialServers }: ServersListProps) {
     try {
       const res = await fetch(`/api/servers/${serverId}`, {
         method: "DELETE",
+        credentials: "include",
       });
 
       if (!res.ok) {
@@ -116,6 +142,73 @@ export default function ServersList({ initialServers }: ServersListProps) {
       setLoading(false);
     }
   };
+
+  // Separate owned and joined servers
+  const ownedServers = servers.filter((s) => s.role === "OWNER");
+  const joinedServers = servers.filter((s) => s.role !== "OWNER");
+
+  // Server Card Component
+  const ServerCard = ({
+    server,
+    isOwner,
+    loading,
+    onToggleRestriction,
+    onDelete,
+  }: {
+    server: Server;
+    isOwner: boolean;
+    loading: boolean;
+    onToggleRestriction: (serverId: string, currentValue: boolean) => void;
+    onDelete: (serverId: string, serverName: string) => void;
+  }) => (
+    <div className="card">
+      {/* Server Info */}
+      <div className="flex items-start gap-md mb-md">
+        <div
+          className="avatar bg-accent text-2xl"
+          style={{ width: "64px", height: "64px" }}
+        >
+          {server.name[0].toUpperCase()}
+        </div>
+        <div className="flex-1">
+          <h3 className="text-xl font-bold mb-sm">{server.name}</h3>
+          <p className="text-sm text-secondary mb-sm">
+            {server.memberCount} members
+          </p>
+          <span className="badge">{server.role}</span>
+        </div>
+      </div>
+
+      {/* Owner Controls */}
+      {isOwner && (
+        <div className="flex items-center gap-sm mb-md p-md bg-secondary rounded-lg">
+          <label className="flex items-center gap-sm flex-1">
+            <input
+              type="checkbox"
+              checked={server.isRestricted}
+              onChange={() => onToggleRestriction(server.id, server.isRestricted)}
+              disabled={loading}
+            />
+            <span className="text-sm">Restricted (Guests cannot post)</span>
+          </label>
+        </div>
+      )}
+
+      {/* Actions */}
+      <div className="flex gap-sm">
+        <button className="btn flex-1">Open</button>
+        {isOwner && (
+          <button
+            className="btn btn-danger"
+            onClick={() => onDelete(server.id, server.name)}
+            disabled={loading}
+          >
+            Delete
+          </button>
+        )}
+      </div>
+    </div>
+  );
 
   return (
     <>
@@ -153,62 +246,48 @@ export default function ServersList({ initialServers }: ServersListProps) {
           </button>
         </div>
       ) : (
-        /* Server Grid */
-        <div className="grid grid-cols-2 gap-lg">
-          {servers.map((server) => (
-            <div key={server.id} className="card">
-              {/* Server Info */}
-              <div className="flex items-start gap-md mb-md">
-                <div
-                  className="avatar bg-accent text-2xl"
-                  style={{ width: "64px", height: "64px" }}
-                >
-                  {server.name[0].toUpperCase()}
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-xl font-bold mb-sm">{server.name}</h3>
-                  <p className="text-sm text-secondary mb-sm">
-                    {server.memberCount} members
-                  </p>
-                  <span className="badge">{server.role}</span>
-                </div>
-              </div>
-
-              {/* Owner Controls */}
-              {server.role === "OWNER" && (
-                <div className="flex items-center gap-sm mb-md p-md bg-secondary rounded-lg">
-                  <label className="flex items-center gap-sm flex-1">
-                    <input
-                      type="checkbox"
-                      checked={server.isRestricted}
-                      onChange={() =>
-                        handleToggleRestriction(server.id, server.isRestricted)
-                      }
-                      disabled={loading}
-                    />
-                    <span className="text-sm">Restricted (Guests cannot post)</span>
-                  </label>
-                </div>
-              )}
-
-              {/* Actions */}
-              <div className="flex gap-sm">
-                <button className="btn flex-1">Open</button>
-                {server.role === "OWNER" && (
-                  <button
-                    className="btn btn-danger"
-                    onClick={() => handleDelete(server.id, server.name)}
-                    disabled={loading}
-                  >
-                    Delete
-                  </button>
-                )}
+        <>
+          {/* My Servers (Owned) */}
+          {ownedServers.length > 0 && (
+            <div className="mb-2xl">
+              <h2 className="text-xl font-bold mb-lg">My Servers</h2>
+              <div className="grid grid-cols-2 gap-lg">
+                {ownedServers.map((server) => (
+                  <ServerCard
+                    key={server.id}
+                    server={server}
+                    isOwner={true}
+                    loading={loading}
+                    onToggleRestriction={handleToggleRestriction}
+                    onDelete={handleDelete}
+                  />
+                ))}
               </div>
             </div>
-          ))}
-        </div>
+          )}
+
+          {/* Joined Servers (Member/Moderator) */}
+          {joinedServers.length > 0 && (
+            <div>
+              <h2 className="text-xl font-bold mb-lg">Joined Servers</h2>
+              <div className="grid grid-cols-2 gap-lg">
+                {joinedServers.map((server) => (
+                  <ServerCard
+                    key={server.id}
+                    server={server}
+                    isOwner={false}
+                    loading={loading}
+                    onToggleRestriction={handleToggleRestriction}
+                    onDelete={handleDelete}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+        </>
       )}
 
+      {/* Create Server Modal */}
       {/* Create Server Modal */}
       {showCreateModal && (
         <div

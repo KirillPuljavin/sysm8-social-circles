@@ -26,6 +26,9 @@ importers:
       sass:
         specifier: ^1.97.3
         version: 1.97.3
+      zod:
+        specifier: ^4.3.6
+        version: 4.3.6
     devDependencies:
       '@azure/static-web-apps-cli':
         specifier: ^2.0.8
