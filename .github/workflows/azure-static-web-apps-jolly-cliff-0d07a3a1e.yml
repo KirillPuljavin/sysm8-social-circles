@@ -72,6 +72,9 @@ jobs:
         DATABASE_URL: ${{ secrets.DATABASE_URL }}
         DIRECT_URL: ${{ secrets.DIRECT_URL }}
 
+    - name: Clean Dev Artifacts
+      run: rm -rf .next/dev
+
     - name: Build And Deploy
       id: builddeploy
       uses: Azure/static-web-apps-deploy@v1
@@ -81,6 +84,7 @@ jobs:
         app_location: "/"
         output_location: ".next"
         skip_app_build: true
+        skip_api_build: true
         github_id_token: ${{ steps.idtoken.outputs.result }}
       env:
         DATABASE_URL: ${{ secrets.DATABASE_URL }}
