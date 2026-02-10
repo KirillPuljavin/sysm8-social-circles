@@ -10,10 +10,6 @@
       }
     },
     {
-      "route": "/circles/*",
-      "allowedRoles": ["authenticated"]
-    },
-    {
       "route": "/logout",
       "redirect": "/.auth/logout"
     }
@@ -31,11 +27,5 @@
   },
   "platform": {
     "apiRuntime": "node:20"
-  },
-  "responseOverrides": {
-    "401": {
-      "redirect": "/.auth/login/github",
-      "statusCode": 302
-    }
   }
 }

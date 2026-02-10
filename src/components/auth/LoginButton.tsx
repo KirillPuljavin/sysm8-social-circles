@@ -5,7 +5,7 @@ export default function LoginButton() {
   return (
     <div className="flex flex-col gap-md">
       <a
-        href="/.auth/login/github?post_login_redirect_uri=/"
+        href="/.auth/login/github?post_login_redirect_uri=/servers"
         className="btn"
         style={{ background: '#24292e', color: 'white' }}
       >
@@ -15,7 +15,7 @@ export default function LoginButton() {
         Continue with GitHub
       </a>
       <a
-        href="/.auth/login/google?post_login_redirect_uri=/"
+        href="/.auth/login/google?post_login_redirect_uri=/servers"
         className="btn"
       >
         <svg width="20" height="20" viewBox="0 0 24 24">
