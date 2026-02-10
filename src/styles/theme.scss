@@ -242,7 +242,42 @@ button, .btn {
 // 5. FORMS
 // ----------------------------------------------------------------------------
 
-input, textarea, select {
+// Form Field Wrapper
+.form-field {
+  margin-bottom: var(--space-lg);
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+// Labels
+label {
+  display: block;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-sm);
+
+  &.required::after {
+    content: '*';
+    color: var(--color-error);
+    margin-left: var(--space-xs);
+  }
+}
+
+// Text Inputs & Textareas
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="url"],
+input[type="tel"],
+input[type="search"],
+input[type="number"],
+input[type="date"],
+input[type="time"],
+textarea,
+select {
   font-family: var(--font-sans);
   font-size: var(--font-size-base);
   color: var(--color-text-primary);
@@ -257,7 +292,7 @@ input, textarea, select {
     color: var(--color-text-tertiary);
   }
 
-  &:hover {
+  &:hover:not(:disabled) {
     border-color: var(--color-text-tertiary);
   }
 
@@ -270,20 +305,326 @@ input, textarea, select {
   &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+    background: var(--color-bg-secondary);
+  }
+
+  // Input sizes
+  &.input-sm {
+    padding: var(--space-sm) var(--space-md);
+    font-size: var(--font-size-sm);
+  }
+
+  &.input-lg {
+    padding: var(--space-lg);
+    font-size: var(--font-size-lg);
+  }
+
+  // Validation states
+  &.input-error {
+    border-color: var(--color-error);
+
+    &:focus {
+      box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.1);
+    }
+  }
+
+  &.input-success {
+    border-color: var(--color-success);
+
+    &:focus {
+      box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.1);
+    }
+  }
+
+  &.input-warning {
+    border-color: var(--color-warning);
+
+    &:focus {
+      box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.1);
+    }
   }
 }
 
 textarea {
   min-height: 120px;
   resize: vertical;
+  line-height: var(--line-height-normal);
 }
 
-label {
+select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23a0a0a0' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--space-md) center;
+  padding-right: var(--space-2xl);
+  cursor: pointer;
+}
+
+// Helper Text
+.help-text {
   display: block;
   font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-  color: var(--color-text-secondary);
-  margin-bottom: var(--space-sm);
+  color: var(--color-text-tertiary);
+  margin-top: var(--space-sm);
+
+  &.error-text {
+    color: var(--color-error);
+  }
+
+  &.success-text {
+    color: var(--color-success);
+  }
+
+  &.warning-text {
+    color: var(--color-warning);
+  }
+}
+
+// Checkboxes (Custom Styled)
+input[type="checkbox"] {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-input);
+  cursor: pointer;
+  position: relative;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+
+  &:hover:not(:disabled) {
+    border-color: var(--color-accent-blue);
+  }
+
+  &:checked {
+    background: var(--color-accent-blue);
+    border-color: var(--color-accent-blue);
+
+    &::after {
+      content: '';
+      position: absolute;
+      left: 5px;
+      top: 2px;
+      width: 6px;
+      height: 10px;
+      border: solid var(--color-bg-primary);
+      border-width: 0 2px 2px 0;
+      transform: rotate(45deg);
+    }
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  &:focus {
+    outline: 2px solid var(--color-border-focus);
+    outline-offset: 2px;
+  }
+}
+
+// Checkbox with Label
+.checkbox-wrapper {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  cursor: pointer;
+
+  input[type="checkbox"] {
+    margin: 0;
+  }
+
+  label {
+    margin: 0;
+    cursor: pointer;
+    user-select: none;
+  }
+}
+
+// Radio Buttons (Custom Styled)
+input[type="radio"] {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-full);
+  background: var(--color-bg-input);
+  cursor: pointer;
+  position: relative;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+
+  &:hover:not(:disabled) {
+    border-color: var(--color-accent-blue);
+  }
+
+  &:checked {
+    border-color: var(--color-accent-blue);
+
+    &::after {
+      content: '';
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 10px;
+      height: 10px;
+      border-radius: var(--radius-full);
+      background: var(--color-accent-blue);
+    }
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  &:focus {
+    outline: 2px solid var(--color-border-focus);
+    outline-offset: 2px;
+  }
+}
+
+// Radio with Label
+.radio-wrapper {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  cursor: pointer;
+
+  input[type="radio"] {
+    margin: 0;
+  }
+
+  label {
+    margin: 0;
+    cursor: pointer;
+    user-select: none;
+  }
+}
+
+// Radio Group
+.radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+// Toggle Switch
+.toggle-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  cursor: pointer;
+
+  input[type="checkbox"] {
+    appearance: none;
+    width: 44px;
+    height: 24px;
+    background: var(--color-bg-tertiary);
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius-full);
+    position: relative;
+    cursor: pointer;
+    transition: all var(--transition-base);
+    margin: 0;
+
+    &::after {
+      content: '';
+      position: absolute;
+      left: 2px;
+      top: 2px;
+      width: 16px;
+      height: 16px;
+      background: var(--color-text-secondary);
+      border-radius: var(--radius-full);
+      transition: all var(--transition-base);
+    }
+
+    &:hover:not(:disabled) {
+      border-color: var(--color-accent-blue);
+    }
+
+    &:checked {
+      background: var(--color-accent-blue);
+      border-color: var(--color-accent-blue);
+
+      &::after {
+        left: 22px;
+        background: var(--color-bg-primary);
+      }
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    &:focus {
+      outline: 2px solid var(--color-border-focus);
+      outline-offset: 2px;
+    }
+  }
+
+  label {
+    margin: 0;
+    cursor: pointer;
+    user-select: none;
+  }
+}
+
+// Input Group (with icons/buttons)
+.input-group {
+  display: flex;
+  width: 100%;
+
+  input {
+    border-radius: 0;
+
+    &:first-child {
+      border-top-left-radius: var(--radius-md);
+      border-bottom-left-radius: var(--radius-md);
+    }
+
+    &:last-child {
+      border-top-right-radius: var(--radius-md);
+      border-bottom-right-radius: var(--radius-md);
+    }
+  }
+
+  .input-addon {
+    display: flex;
+    align-items: center;
+    padding: var(--space-md);
+    background: var(--color-bg-tertiary);
+    border: 1px solid var(--color-border);
+    color: var(--color-text-secondary);
+    font-size: var(--font-size-sm);
+    white-space: nowrap;
+
+    &:first-child {
+      border-right: none;
+      border-top-left-radius: var(--radius-md);
+      border-bottom-left-radius: var(--radius-md);
+    }
+
+    &:last-child {
+      border-left: none;
+      border-top-right-radius: var(--radius-md);
+      border-bottom-right-radius: var(--radius-md);
+    }
+  }
+
+  button {
+    border-radius: 0;
+
+    &:last-child {
+      border-top-right-radius: var(--radius-md);
+      border-bottom-right-radius: var(--radius-md);
+    }
+  }
 }
 
 // ----------------------------------------------------------------------------
@@ -486,6 +827,57 @@ label {
 
   &.avatar-sm { width: 32px; height: 32px; font-size: var(--font-size-sm); }
   &.avatar-lg { width: 56px; height: 56px; font-size: var(--font-size-lg); }
+}
+
+// Modal/Dialog
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn var(--transition-fast);
+  padding: var(--space-lg);
+}
+
+.modal {
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  max-width: 500px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: scaleIn var(--transition-base);
+
+  // Modal sizes
+  &.modal-sm { max-width: 400px; }
+  &.modal-lg { max-width: 700px; }
+  &.modal-xl { max-width: 900px; }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 // ----------------------------------------------------------------------------

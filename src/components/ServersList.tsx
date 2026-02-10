@@ -288,16 +288,13 @@ export default function ServersList({ initialServers }: ServersListProps) {
       )}
 
       {/* Create Server Modal */}
-      {/* Create Server Modal */}
       {showCreateModal && (
         <div
-          className="fixed inset-0 bg-primary flex items-center justify-center"
-          style={{ backgroundColor: "rgba(0,0,0,0.8)", zIndex: 1000 }}
+          className="modal-backdrop"
           onClick={() => setShowCreateModal(false)}
         >
           <div
-            className="card"
-            style={{ maxWidth: "500px", width: "90%" }}
+            className="modal card"
             onClick={(e) => e.stopPropagation()}
           >
             <h2 className="text-2xl font-bold mb-lg">Create Server</h2>
