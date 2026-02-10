@@ -70,11 +70,12 @@ jobs:
       run: pnpm install --frozen-lockfile
 
     - name: Apply Database Migrations
-      # CRITICAL: Use DIRECT_URL (Port 5432) for migrations
-      # Poolers (Port 6543) do not support session-based locks required by Prisma migrations
+      # CRITICAL: Prisma uses directUrl from schema for migrations
+      # Both env vars must be available for Prisma to read schema correctly
       run: pnpm exec prisma migrate deploy
       env:
-        DATABASE_URL: ${{ secrets.DIRECT_URL }}
+        DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        DIRECT_URL: ${{ secrets.DIRECT_URL }}
 
     - name: Generate Prisma Client
       run: pnpm exec prisma generate
