@@ -14,7 +14,7 @@ export function proxy(request: NextRequest) {
   }
 
   // Public routes (no auth required)
-  const publicRoutes = ["/", "/.auth/login/github", "/.auth/login/google", "/.auth/logout"];
+  const publicRoutes = ["/", "/test-public", "/.auth/login/github", "/.auth/login/google", "/.auth/logout"];
 
   if (publicRoutes.includes(pathname)) {
     return NextResponse.next();

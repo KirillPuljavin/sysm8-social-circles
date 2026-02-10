@@ -1,6 +1,18 @@
 {
   "trailingSlash": "never",
+  "auth": {
+    "identityProviders": {
+      "azureActiveDirectory": {
+        "enabled": false
+      },
+      "customOpenIdConnectProviders": {}
+    }
+  },
   "routes": [
+    {
+      "route": "/",
+      "allowedRoles": ["anonymous", "authenticated"]
+    },
     {
       "route": "/api/*",
       "headers": {
