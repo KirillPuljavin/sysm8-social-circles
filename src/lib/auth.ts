@@ -10,9 +10,9 @@ import type { User } from "@prisma/client";
  * Injected via x-ms-client-principal header (Base64-encoded JSON)
  */
 interface ClientPrincipal {
-  identityProvider: string; // "github", "google", etc.
+  identityProvider: string; // "google"
   userId: string; // Persistent unique ID
-  userDetails: string; // Email or username
+  userDetails: string; // Email
   userRoles: string[]; // ["anonymous"] or ["authenticated"]
 }
 

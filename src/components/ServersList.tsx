@@ -26,6 +26,7 @@ export default function ServersList({ initialServers }: ServersListProps) {
   const [createRestricted, setCreateRestricted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [copiedInvite, setCopiedInvite] = useState<string | null>(null);
 
   // Create Server
   const handleCreate = async (e: React.FormEvent) => {
@@ -143,6 +144,15 @@ export default function ServersList({ initialServers }: ServersListProps) {
     }
   };
 
+  // Copy Invite Link
+  const copyInviteLink = (inviteCode: string) => {
+    const inviteUrl = `${window.location.origin}/invite/${inviteCode}`;
+    navigator.clipboard.writeText(inviteUrl).then(() => {
+      setCopiedInvite(inviteCode);
+      setTimeout(() => setCopiedInvite(null), 2000);
+    });
+  };
+
   // Separate owned and joined servers
   const ownedServers = servers.filter((s) => s.role === "OWNER");
   const joinedServers = servers.filter((s) => s.role !== "OWNER");
@@ -154,12 +164,16 @@ export default function ServersList({ initialServers }: ServersListProps) {
     loading,
     onToggleRestriction,
     onDelete,
+    onCopyInvite,
+    copied,
   }: {
     server: Server;
     isOwner: boolean;
     loading: boolean;
     onToggleRestriction: (serverId: string, currentValue: boolean) => void;
     onDelete: (serverId: string, serverName: string) => void;
+    onCopyInvite: (inviteCode: string) => void;
+    copied: boolean;
   }) => (
     <div className="card">
       {/* Server Info */}
@@ -197,6 +211,14 @@ export default function ServersList({ initialServers }: ServersListProps) {
       {/* Actions */}
       <div className="flex gap-sm">
         <button className="btn flex-1">Open</button>
+        <button
+          className="btn"
+          onClick={() => onCopyInvite(server.inviteCode)}
+          disabled={loading}
+          title="Copy invite link to clipboard"
+        >
+          {copied ? "✓ Copied" : "Invite"}
+        </button>
         {isOwner && (
           <button
             className="btn btn-danger"
@@ -260,6 +282,8 @@ export default function ServersList({ initialServers }: ServersListProps) {
                     loading={loading}
                     onToggleRestriction={handleToggleRestriction}
                     onDelete={handleDelete}
+                    onCopyInvite={copyInviteLink}
+                    copied={copiedInvite === server.inviteCode}
                   />
                 ))}
               </div>
@@ -279,6 +303,8 @@ export default function ServersList({ initialServers }: ServersListProps) {
                     loading={loading}
                     onToggleRestriction={handleToggleRestriction}
                     onDelete={handleDelete}
+                    onCopyInvite={copyInviteLink}
+                    copied={copiedInvite === server.inviteCode}
                   />
                 ))}
               </div>
