@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { MemberRole } from "@prisma/client";
 
 interface Member {
@@ -15,13 +16,55 @@ interface Member {
 interface MembersListProps {
   members: Member[];
   currentUserId: string;
+  currentUserRole: MemberRole;
+  serverId: string;
 }
 
-export default function MembersList({ members, currentUserId }: MembersListProps) {
-  // Group members by role
-  const owners = members.filter((m) => m.role === MemberRole.OWNER);
-  const moderators = members.filter((m) => m.role === MemberRole.MODERATOR);
-  const guests = members.filter((m) => m.role === MemberRole.GUEST);
+export default function MembersList({
+  members,
+  currentUserId,
+  currentUserRole,
+  serverId,
+}: MembersListProps) {
+  const [membersList, setMembersList] = useState<Member[]>(members);
+  const [updatingMemberId, setUpdatingMemberId] = useState<string | null>(null);
+
+  const isOwner = currentUserRole === MemberRole.OWNER;
+
+  const handleRoleChange = async (memberId: string, newRole: MemberRole) => {
+    setUpdatingMemberId(memberId);
+    try {
+      const res = await fetch(`/api/servers/${serverId}/members/${memberId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ role: newRole }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to update role");
+      }
+
+      const { member: updatedMember } = await res.json();
+
+      // Update local state
+      setMembersList((prev) =>
+        prev.map((m) => (m.id === memberId ? updatedMember : m))
+      );
+    } catch (error) {
+      console.error("Failed to update role:", error);
+      alert(
+        error instanceof Error ? error.message : "Failed to update member role"
+      );
+    } finally {
+      setUpdatingMemberId(null);
+    }
+  };
+  // Group members by role (use local state)
+  const owners = membersList.filter((m) => m.role === MemberRole.OWNER);
+  const moderators = membersList.filter((m) => m.role === MemberRole.MODERATOR);
+  const guests = membersList.filter((m) => m.role === MemberRole.GUEST);
 
   const renderMember = (member: Member) => {
     const displayName = member.user.name || member.user.email;
@@ -32,6 +75,10 @@ export default function MembersList({ members, currentUserId }: MembersListProps
         : member.role === MemberRole.MODERATOR
         ? "var(--color-warning)"
         : "var(--color-text-secondary)";
+
+    const canManageRole =
+      isOwner && member.role !== MemberRole.OWNER && !isCurrentUser;
+    const isUpdating = updatingMemberId === member.id;
 
     return (
       <div
@@ -59,6 +106,34 @@ export default function MembersList({ members, currentUserId }: MembersListProps
             {isCurrentUser && " (You)"}
           </p>
         </div>
+
+        {/* Role Management (Owner only) */}
+        {canManageRole && (
+          <div style={{ flexShrink: 0 }}>
+            {isUpdating ? (
+              <span className="text-xs text-secondary">Updating...</span>
+            ) : (
+              <select
+                value={member.role}
+                onChange={(e) =>
+                  handleRoleChange(member.id, e.target.value as MemberRole)
+                }
+                className="text-xs"
+                style={{
+                  padding: "var(--space-xs) var(--space-sm)",
+                  background: "var(--color-bg-input)",
+                  border: "1px solid var(--color-border)",
+                  borderRadius: "var(--radius-sm)",
+                  color: "var(--color-text-primary)",
+                  cursor: "pointer",
+                }}
+              >
+                <option value="MODERATOR">Moderator</option>
+                <option value="GUEST">Guest</option>
+              </select>
+            )}
+          </div>
+        )}
       </div>
     );
   };

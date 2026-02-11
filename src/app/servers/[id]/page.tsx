@@ -156,7 +156,12 @@ export default async function ServerChatPage({ params }: ServerChatPageProps) {
           flexDirection: "column",
         }}
       >
-        <MembersList members={server.members} currentUserId={user.id} />
+        <MembersList
+          members={server.members}
+          currentUserId={user.id}
+          currentUserRole={member.role}
+          serverId={serverId}
+        />
       </div>
     </div>
   );
