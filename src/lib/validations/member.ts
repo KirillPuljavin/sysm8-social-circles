@@ -6,7 +6,7 @@ import { z } from "zod";
  */
 export const updateMemberRoleSchema = z.object({
   role: z.enum(["MODERATOR", "GUEST"], {
-    errorMap: () => ({ message: "Role must be MODERATOR or GUEST" }),
+    message: "Role must be MODERATOR or GUEST",
   }),
 });
 
