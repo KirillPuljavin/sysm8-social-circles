@@ -38,6 +38,7 @@ export default function MessageList({
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [showNewMessagesPopup, setShowNewMessagesPopup] = useState(false);
   const [deletingMessageId, setDeletingMessageId] = useState<string | null>(null);
+  const [hoveredMessageId, setHoveredMessageId] = useState<string | null>(null);
   const wasAtBottomRef = useRef(true);
 
   const scrollToBottom = () => {
@@ -342,8 +343,6 @@ export default function MessageList({
       )}
 
       {messages.map((message) => {
-        const displayName =
-          message.member.user.name || message.member.user.email;
         const roleColor =
           message.member.role === "OWNER"
             ? "var(--color-accent-blue)"
@@ -365,17 +364,33 @@ export default function MessageList({
         const isDeleting = deletingMessageId === message.id;
 
         return (
-          <div key={message.id} className="flex gap-md">
+          <div
+            key={message.id}
+            className="flex gap-md"
+            style={{
+              position: "relative",
+              padding: "var(--space-sm)",
+              marginLeft: "calc(-1 * var(--space-sm))",
+              marginRight: "calc(-1 * var(--space-sm))",
+              borderRadius: "var(--radius-md)",
+              transition: "background var(--transition-fast)",
+              background: hoveredMessageId === message.id
+                ? "var(--color-bg-tertiary)"
+                : "transparent",
+            }}
+            onMouseEnter={() => setHoveredMessageId(message.id)}
+            onMouseLeave={() => setHoveredMessageId(null)}
+          >
             <div
               className="avatar avatar-sm bg-tertiary"
               style={{ flexShrink: 0 }}
             >
-              {displayName[0].toUpperCase()}
+              {message.member.user.email[0].toUpperCase()}
             </div>
-            <div style={{ flex: 1 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
               <div className="flex items-center gap-sm mb-xs">
                 <span className="font-semibold" style={{ color: roleColor }}>
-                  {displayName}
+                  {message.member.user.email}
                 </span>
                 <span className="text-xs text-tertiary">
                   {new Date(message.sentAt).toLocaleTimeString([], {
@@ -412,25 +427,6 @@ export default function MessageList({
                     ✗ Retry
                   </button>
                 )}
-                {/* Delete Button (RBAC) */}
-                {canDelete && message.status === "SENT" && (
-                  <button
-                    onClick={() => handleDeleteMessage(message.id)}
-                    disabled={isDeleting}
-                    className="text-xs"
-                    style={{
-                      color: "var(--color-error)",
-                      cursor: isDeleting ? "not-allowed" : "pointer",
-                      opacity: isDeleting ? 0.5 : 0.7,
-                      background: "none",
-                      border: "none",
-                      padding: "0",
-                    }}
-                    title="Delete message"
-                  >
-                    {isDeleting ? "..." : "🗑️"}
-                  </button>
-                )}
               </div>
               <p
                 className="text-primary"
@@ -443,6 +439,37 @@ export default function MessageList({
                 {message.content}
               </p>
             </div>
+
+            {/* Delete Button (Hover-only, Right-aligned) */}
+            {canDelete && message.status === "SENT" && hoveredMessageId === message.id && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDeleteMessage(message.id);
+                }}
+                disabled={isDeleting}
+                className="text-xs"
+                style={{
+                  position: "absolute",
+                  right: "var(--space-sm)",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  padding: "var(--space-xs) var(--space-sm)",
+                  background: "var(--color-error)",
+                  color: "white",
+                  border: "none",
+                  borderRadius: "var(--radius-sm)",
+                  cursor: isDeleting ? "not-allowed" : "pointer",
+                  opacity: isDeleting ? 0.5 : 1,
+                  fontWeight: "500",
+                  whiteSpace: "nowrap",
+                  boxShadow: "var(--shadow-sm)",
+                }}
+                title="Delete message"
+              >
+                {isDeleting ? "Deleting..." : "× Delete"}
+              </button>
+            )}
           </div>
         );
       })}

@@ -29,6 +29,7 @@ export default function MembersList({
   const [membersList, setMembersList] = useState<Member[]>(members);
   const [updatingMemberId, setUpdatingMemberId] = useState<string | null>(null);
   const [kickingMemberId, setKickingMemberId] = useState<string | null>(null);
+  const [expandedMemberId, setExpandedMemberId] = useState<string | null>(null);
 
   const isOwner = currentUserRole === MemberRole.OWNER;
   const isModerator = currentUserRole === MemberRole.MODERATOR;
@@ -100,8 +101,8 @@ export default function MembersList({
   const guests = membersList.filter((m) => m.role === MemberRole.GUEST);
 
   const renderMember = (member: Member) => {
-    const displayName = member.user.name || member.user.email;
     const isCurrentUser = member.user.id === currentUserId;
+    const isExpanded = expandedMemberId === member.id;
     const roleColor =
       member.role === MemberRole.OWNER
         ? "var(--color-accent-blue)"
@@ -120,79 +121,131 @@ export default function MembersList({
       (isOwner || (isModerator && member.role === MemberRole.GUEST));
     const isKicking = kickingMemberId === member.id;
 
+    const hasActions = canManageRole || canKick;
+
+    const toggleExpand = () => {
+      if (!hasActions) return;
+      setExpandedMemberId(isExpanded ? null : member.id);
+    };
+
     return (
       <div
         key={member.id}
-        className="flex items-center gap-sm p-sm rounded-md"
         style={{
           background: isCurrentUser ? "var(--color-bg-tertiary)" : "transparent",
+          borderRadius: "var(--radius-md)",
+          marginBottom: "var(--space-xs)",
+          overflow: "hidden",
         }}
       >
-        <div className="avatar avatar-sm bg-tertiary" style={{ flexShrink: 0 }}>
-          {displayName[0].toUpperCase()}
-        </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <p
-            className="text-sm font-medium"
-            style={{
-              margin: 0,
-              color: roleColor,
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {displayName}
-            {isCurrentUser && " (You)"}
-          </p>
+        {/* Main Row: Avatar + Email + Chevron */}
+        <div
+          className="flex items-center gap-sm p-sm"
+          style={{
+            cursor: hasActions ? "pointer" : "default",
+          }}
+          onClick={hasActions ? toggleExpand : undefined}
+        >
+          <div className="avatar avatar-sm bg-tertiary" style={{ flexShrink: 0 }}>
+            {member.user.email[0].toUpperCase()}
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p
+              className="text-sm font-medium"
+              style={{
+                margin: 0,
+                color: roleColor,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {member.user.email}
+              {isCurrentUser && " (You)"}
+            </p>
+          </div>
+
+          {/* Chevron (only if has actions) */}
+          {hasActions && (
+            <div
+              style={{
+                flexShrink: 0,
+                transition: "transform var(--transition-fast)",
+                transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)",
+                color: "var(--color-text-secondary)",
+                fontSize: "1.25rem",
+                lineHeight: 1,
+              }}
+            >
+              ▼
+            </div>
+          )}
         </div>
 
-        {/* Role Management (Owner only) */}
-        {canManageRole && (
-          <div style={{ flexShrink: 0 }}>
-            {isUpdating ? (
-              <span className="text-xs text-secondary">Updating...</span>
-            ) : (
-              <select
-                value={member.role}
-                onChange={(e) =>
-                  handleRoleChange(member.id, e.target.value as MemberRole)
-                }
+        {/* Expandable Actions Row */}
+        {hasActions && isExpanded && (
+          <div
+            className="flex items-center gap-sm p-sm"
+            style={{
+              paddingTop: 0,
+              paddingLeft: "calc(var(--space-sm) + 32px + var(--space-sm))", // Align with name
+              animation: "slideDown 0.2s ease-out",
+            }}
+          >
+            {/* Role Management (Owner only) */}
+            {canManageRole && (
+              <div style={{ flex: 1 }}>
+                {isUpdating ? (
+                  <span className="text-xs text-secondary">Updating role...</span>
+                ) : (
+                  <select
+                    value={member.role}
+                    onChange={(e) => {
+                      e.stopPropagation();
+                      handleRoleChange(member.id, e.target.value as MemberRole);
+                    }}
+                    className="text-xs"
+                    style={{
+                      width: "100%",
+                      padding: "var(--space-sm)",
+                      background: "var(--color-bg-input)",
+                      border: "1px solid var(--color-border)",
+                      borderRadius: "var(--radius-sm)",
+                      color: "var(--color-text-primary)",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <option value="MODERATOR">Moderator</option>
+                    <option value="GUEST">Guest</option>
+                  </select>
+                )}
+              </div>
+            )}
+
+            {/* Kick Button (Owner/Moderator) */}
+            {canKick && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleKickMember(member);
+                }}
+                disabled={isKicking || isUpdating}
                 className="text-xs"
                 style={{
-                  padding: "var(--space-xs) var(--space-sm)",
-                  background: "var(--color-bg-input)",
-                  border: "1px solid var(--color-border)",
+                  padding: "var(--space-sm) var(--space-md)",
+                  background: "var(--color-error)",
+                  color: "white",
+                  border: "none",
                   borderRadius: "var(--radius-sm)",
-                  color: "var(--color-text-primary)",
-                  cursor: "pointer",
+                  cursor: isKicking ? "not-allowed" : "pointer",
+                  opacity: isKicking || isUpdating ? 0.5 : 1,
+                  whiteSpace: "nowrap",
                 }}
               >
-                <option value="MODERATOR">Moderator</option>
-                <option value="GUEST">Guest</option>
-              </select>
+                {isKicking ? "Kicking..." : "Kick Member"}
+              </button>
             )}
           </div>
-        )}
-
-        {/* Kick Button (Owner/Moderator) */}
-        {canKick && (
-          <button
-            onClick={() => handleKickMember(member)}
-            disabled={isKicking || isUpdating}
-            className="text-xs"
-            style={{
-              padding: "var(--space-xs) var(--space-sm)",
-              background: "var(--color-error)",
-              color: "white",
-              border: "none",
-              borderRadius: "var(--radius-sm)",
-              cursor: isKicking ? "not-allowed" : "pointer",
-              opacity: isKicking || isUpdating ? 0.5 : 1,
-            }}
-          >
-            {isKicking ? "..." : "Kick"}
-          </button>
         )}
       </div>
     );
