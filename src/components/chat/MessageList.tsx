@@ -305,13 +305,10 @@ export default function MessageList({
                   {displayName}
                 </span>
                 <span className="text-xs text-tertiary">
-                  {new Date(message.sentAt || message.createdAt).toLocaleTimeString(
-                    [],
-                    {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    }
-                  )}
+                  {new Date(message.sentAt).toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
                 </span>
                 {/* Status indicator */}
                 {message.status === "PENDING" && (

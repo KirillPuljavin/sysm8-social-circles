@@ -24,6 +24,7 @@ export interface ClientMessage {
       email: string;
     };
   };
+  createdAt?: string;
   error?: string;
   retryCount?: number;
 }
