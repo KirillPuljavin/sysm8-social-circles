@@ -4,19 +4,17 @@ import { useState } from "react";
 import { MemberRole } from "@prisma/client";
 
 interface MessageInputProps {
-  serverId: string;
   userRole: MemberRole;
   isRestricted: boolean;
+  onSendMessage: (content: string) => Promise<void>;
 }
 
 export default function MessageInput({
-  serverId,
   userRole,
   isRestricted,
+  onSendMessage,
 }: MessageInputProps) {
   const [content, setContent] = useState("");
-  const [sending, setSending] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   // Check if user can post
   const canPost = !isRestricted || userRole !== MemberRole.GUEST;
@@ -27,29 +25,11 @@ export default function MessageInput({
     if (!content.trim()) return;
     if (!canPost) return;
 
-    setSending(true);
-    setError(null);
+    // Send message (optimistic - doesn't wait)
+    void onSendMessage(content.trim());
 
-    try {
-      const res = await fetch(`/api/servers/${serverId}/messages`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ content: content.trim() }),
-      });
-
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Failed to send message");
-      }
-
-      // Clear input on success
-      setContent("");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Unknown error");
-    } finally {
-      setSending(false);
-    }
+    // Clear input immediately
+    setContent("");
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -73,18 +53,12 @@ export default function MessageInput({
 
   return (
     <form onSubmit={handleSubmit}>
-      {error && (
-        <div className="alert alert-error mb-md" style={{ padding: "var(--space-sm) var(--space-md)" }}>
-          <p className="text-sm" style={{ margin: 0 }}>{error}</p>
-        </div>
-      )}
       <div className="flex gap-sm">
         <textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Type a message... (Enter to send, Shift+Enter for new line)"
-          disabled={sending}
           maxLength={2000}
           style={{
             flex: 1,
@@ -96,10 +70,10 @@ export default function MessageInput({
         <button
           type="submit"
           className="btn"
-          disabled={sending || !content.trim()}
+          disabled={!content.trim()}
           style={{ alignSelf: "flex-end" }}
         >
-          {sending ? "Sending..." : "Send"}
+          Send
         </button>
       </div>
       <p className="text-xs text-tertiary" style={{ marginTop: "var(--space-sm)", marginBottom: 0 }}>

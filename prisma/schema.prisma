@@ -17,6 +17,10 @@ enum MemberRole {
   GUEST
 }
 
+enum MessageStatus {
+  SENT
+}
+
 model User {
   id      String  @id @default(uuid())
   azureId String  @unique
@@ -70,8 +74,13 @@ model Member {
 }
 
 model Message {
-  id      String @id @default(uuid())
-  content String @db.Text
+  id       String        @id @default(uuid())
+  clientId String        @unique
+  content  String        @db.Text
+
+  status   MessageStatus @default(SENT)
+  sentAt   DateTime
+  sequence Int
 
   memberId String
   member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
@@ -80,6 +89,9 @@ model Message {
   server   Server @relation(fields: [serverId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
+
+  @@index([serverId, sentAt, sequence])
+  @@index([clientId])
 }
 
 model Conversation {

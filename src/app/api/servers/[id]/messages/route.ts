@@ -4,6 +4,7 @@ import { getAuthenticatedUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getServerMember, canPost } from "@/lib/rbac";
 import { createMessageSchema } from "@/lib/validations/message";
+import { Prisma } from "@prisma/client";
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -33,9 +34,41 @@ export async function GET(req: NextRequest, context: RouteContext) {
       );
     }
 
-    // Fetch messages with member and user info
+    // Cursor pagination: Get 'before' and 'limit' from query params
+    const { searchParams } = new URL(req.url);
+    const before = searchParams.get("before");
+    const limit = Math.min(parseInt(searchParams.get("limit") || "100"), 100);
+
+    // Build where clause for cursor
+    const where: Prisma.MessageWhereInput = { serverId };
+
+    if (before) {
+      // Get the cursor message to compare against
+      const cursorMessage = await prisma.message.findUnique({
+        where: { id: before },
+        select: { sentAt: true, sequence: true, id: true },
+      });
+
+      if (cursorMessage) {
+        // Fetch messages before this cursor (older messages)
+        where.OR = [
+          { sentAt: { lt: cursorMessage.sentAt } },
+          {
+            sentAt: cursorMessage.sentAt,
+            sequence: { lt: cursorMessage.sequence },
+          },
+          {
+            sentAt: cursorMessage.sentAt,
+            sequence: cursorMessage.sequence,
+            id: { lt: cursorMessage.id },
+          },
+        ];
+      }
+    }
+
+    // Fetch messages with proper ordering
     const messages = await prisma.message.findMany({
-      where: { serverId },
+      where,
       include: {
         member: {
           include: {
@@ -49,11 +82,18 @@ export async function GET(req: NextRequest, context: RouteContext) {
           },
         },
       },
-      orderBy: { createdAt: "asc" },
-      take: 100, // Limit to last 100 messages
+      orderBy: [
+        { sentAt: "desc" },
+        { sequence: "desc" },
+        { id: "desc" },
+      ],
+      take: limit,
     });
 
-    return NextResponse.json({ messages });
+    // Reverse to get chronological order (oldest to newest)
+    const orderedMessages = messages.reverse();
+
+    return NextResponse.json({ messages: orderedMessages });
   } catch (error) {
     console.error("GET /api/servers/[id]/messages error:", error);
     return NextResponse.json(
@@ -107,10 +147,58 @@ export async function POST(req: NextRequest, context: RouteContext) {
       );
     }
 
+    // Clock skew validation (±5 minutes)
+    const serverTime = new Date();
+    const clientTime = new Date(validation.data.sentAt);
+    const skewMs = Math.abs(serverTime.getTime() - clientTime.getTime());
+
+    if (skewMs > 5 * 60 * 1000) {
+      return NextResponse.json(
+        { error: "Client clock skew too large. Please sync your system clock." },
+        { status: 400 }
+      );
+    }
+
+    // Idempotency check: Check if message with this clientId already exists
+    const existing = await prisma.message.findUnique({
+      where: { clientId: validation.data.clientId },
+      include: {
+        member: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (existing) {
+      // Idempotent: Verify content and sequence match
+      if (
+        existing.content !== validation.data.content ||
+        existing.sequence !== validation.data.sequence
+      ) {
+        return NextResponse.json(
+          { error: "Duplicate clientId with different content/sequence" },
+          { status: 409 }
+        );
+      }
+      // Return existing message (idempotent success)
+      return NextResponse.json(existing, { status: 201 });
+    }
+
     // Create message
     const message = await prisma.message.create({
       data: {
+        clientId: validation.data.clientId,
         content: validation.data.content,
+        sentAt: clientTime,
+        sequence: validation.data.sequence,
         memberId: member.id,
         serverId,
       },

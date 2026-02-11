@@ -3,8 +3,7 @@ import { getAuthenticatedUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { getServerMember } from "@/lib/rbac";
-import MessageList from "@/components/chat/MessageList";
-import MessageInput from "@/components/chat/MessageInput";
+import ChatContainer from "@/components/chat/ChatContainer";
 import MembersList from "@/components/chat/MembersList";
 import Link from "next/link";
 
@@ -119,23 +118,20 @@ export default async function ServerChatPage({ params }: ServerChatPageProps) {
           </div>
         </div>
 
-        {/* Messages */}
-        <div style={{ flex: 1, overflow: "hidden" }}>
-          <MessageList serverId={serverId} />
-        </div>
-
-        {/* Message Input */}
-        <div style={{
-          padding: "var(--space-lg)",
-          borderTop: "1px solid var(--color-border)",
-          background: "var(--color-bg-secondary)"
-        }}>
-          <MessageInput
-            serverId={serverId}
-            userRole={member.role}
-            isRestricted={server.isRestricted}
-          />
-        </div>
+        {/* Chat Container (Messages + Input) */}
+        <ChatContainer
+          serverId={serverId}
+          currentMember={{
+            id: member.id,
+            role: member.role,
+            user: {
+              id: user.id,
+              name: user.name,
+              email: user.email,
+            },
+          }}
+          isRestricted={server.isRestricted}
+        />
       </div>
 
       {/* Members Sidebar */}
