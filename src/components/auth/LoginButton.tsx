@@ -1,10 +1,7 @@
-// Azure SWA Managed Auth - Google OAuth Only
-// Redirects to Azure's built-in Google OAuth flow
-
 export default function LoginButton() {
   return (
     <a
-      href="/.auth/login/google?post_login_redirect_uri=/"
+      href="/.auth/login/google?post_login_redirect_uri=/&prompt=select_account"
       className="btn"
       style={{
         background: 'white',

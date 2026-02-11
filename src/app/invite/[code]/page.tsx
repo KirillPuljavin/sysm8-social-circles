@@ -1,6 +1,3 @@
-// Invite Page - Join Server via Invite Link
-// SSR page that automatically joins user to server and redirects
-
 import { headers } from "next/headers";
 import { getAuthenticatedUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -16,12 +13,10 @@ export default async function InvitePage({ params }: InvitePageProps) {
   const headersList = await headers();
   const user = await getAuthenticatedUser(headersList);
 
-  // Authentication required
   if (!user) {
     redirect(`/.auth/login/google?post_login_redirect_uri=/invite/${code}`);
   }
 
-  // Find server by invite code
   const server = await prisma.server.findUnique({
     where: { inviteCode: code },
     include: {

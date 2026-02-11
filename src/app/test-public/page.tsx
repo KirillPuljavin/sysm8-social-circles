@@ -1,4 +1,3 @@
-// Test page - completely public, no auth checks
 export default function TestPublicPage() {
   return (
     <div style={{ padding: '2rem' }}>

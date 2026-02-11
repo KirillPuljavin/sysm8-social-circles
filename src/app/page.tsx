@@ -1,25 +1,14 @@
-// Landing Page / Login Hybrid
-// Public page - only page visible without authentication
-// Enterprise branding + marketing + login CTA
-
 import { headers } from "next/headers";
 import { getAuthenticatedUser } from "@/lib/auth";
 import LoginButton from "@/components/auth/LoginButton";
-import { redirect } from "next/navigation";
+import Link from "next/link";
 
 export default async function Home() {
   const headersList = await headers();
   const user = await getAuthenticatedUser(headersList);
 
-  // Redirect authenticated users to servers
-  if (user) {
-    redirect("/servers");
-  }
-
-  // Landing page for unauthenticated users
   return (
     <main>
-      {/* Hero Section */}
       <section className="flex flex-col items-center justify-center text-center p-2xl" style={{ minHeight: '80vh' }}>
         <div style={{ maxWidth: '800px' }}>
           <h1 className="text-4xl font-bold mb-md">
@@ -29,11 +18,16 @@ export default async function Home() {
             TheCord brings teams together with secure, organized communication.
             Create private servers, invite members, and collaborate with confidence.
           </p>
-          <LoginButton />
+          {user ? (
+            <Link href="/servers" className="btn btn-primary">
+              Continue to Servers →
+            </Link>
+          ) : (
+            <LoginButton />
+          )}
         </div>
       </section>
 
-      {/* Features Section */}
       <section className="bg-secondary p-2xl">
         <div className="container">
           <h2 className="text-3xl font-bold text-center mb-xl">
@@ -65,7 +59,6 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* CTA Section */}
       <section className="flex flex-col items-center justify-center text-center p-2xl">
         <div style={{ maxWidth: '600px' }}>
           <h2 className="text-3xl font-bold mb-md">Ready to Get Started?</h2>

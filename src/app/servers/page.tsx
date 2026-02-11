@@ -1,6 +1,3 @@
-// Servers Page - Protected Route
-// Server-rendered page with client-side CRUD operations
-
 import { headers } from "next/headers";
 import { getAuthenticatedUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -10,12 +7,10 @@ export default async function ServersPage() {
   const headersList = await headers();
   const user = await getAuthenticatedUser(headersList);
 
-  // Azure SWA blocks unauthenticated users at edge, but defensive check for local dev
   if (!user) {
-    return <div>Unauthorized</div>; // Should never happen in production
+    return <div>Unauthorized</div>;
   }
 
-  // Fetch user's servers (via membership)
   const memberships = await prisma.member.findMany({
     where: { userId: user.id },
     include: {
@@ -29,7 +24,6 @@ export default async function ServersPage() {
     },
   });
 
-  // Transform data for client component
   const servers = memberships.map((m) => ({
     id: m.server.id,
     name: m.server.name,

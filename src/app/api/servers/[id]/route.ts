@@ -1,7 +1,3 @@
-// Protected API: Server CRUD (GET, PATCH, DELETE)
-// Authorization: User must be authenticated AND a member of the server
-// Flow: Azure SWA Auth → JIT Sync → RBAC Check → Operation
-
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedUser, isServerMember } from "@/lib/auth";
 import { canEditServer, canDeleteServer } from "@/lib/rbac";
@@ -17,10 +13,7 @@ export async function GET(
   request: NextRequest,
   context: { params: Promise<{ id: string }> },
 ) {
-  // Extract serverId from route params (Next.js 16 async params)
   const { id: serverId } = await context.params;
-
-  // Step 1: Authenticate user via Azure SWA header + JIT sync
   const user = await getAuthenticatedUser(request.headers);
 
   if (!user) {
@@ -30,7 +23,6 @@ export async function GET(
     );
   }
 
-  // Step 2: Check server membership
   const isMember = await isServerMember(user.id, serverId);
 
   if (!isMember) {
@@ -40,7 +32,6 @@ export async function GET(
     );
   }
 
-  // Step 3: Fetch server data
   const server = await prisma.server.findUnique({
     where: { id: serverId },
     include: {
@@ -69,7 +60,6 @@ export async function GET(
     return NextResponse.json({ error: "Server not found" }, { status: 404 });
   }
 
-  // Step 4: Return server data
   return NextResponse.json({
     id: server.id,
     name: server.name,

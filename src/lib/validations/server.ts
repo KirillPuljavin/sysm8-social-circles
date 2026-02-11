@@ -1,6 +1,3 @@
-// Server validation schemas - shared between frontend and backend
-// Ensures consistent validation rules across the application
-
 import { z } from "zod";
 
 /**
@@ -37,6 +34,5 @@ export const updateServerSchema = z
     message: "At least one field must be provided",
   });
 
-// Type inference for TypeScript
 export type CreateServerInput = z.infer<typeof createServerSchema>;
 export type UpdateServerInput = z.infer<typeof updateServerSchema>;

@@ -1,8 +1,5 @@
 "use client";
 
-// Server Management Component
-// Full CRUD: Create, Toggle Restriction, Delete
-
 import { useState } from "react";
 import { createServerSchema } from "@/lib/validations/server";
 
@@ -28,12 +25,10 @@ export default function ServersList({ initialServers }: ServersListProps) {
   const [error, setError] = useState<string | null>(null);
   const [copiedInvite, setCopiedInvite] = useState<string | null>(null);
 
-  // Create Server
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    // Frontend validation with Zod
     const validation = createServerSchema.safeParse({
       name: createName,
       isRestricted: createRestricted,

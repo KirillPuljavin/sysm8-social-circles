@@ -1,7 +1,3 @@
-// Azure SWA Auth + JIT User Sync
-// Extracts identity from x-ms-client-principal header
-// Syncs user to DB if first login (upsert pattern)
-
 import { prisma } from "./prisma";
 import type { User } from "@prisma/client";
 
@@ -27,8 +23,6 @@ export async function getAuthenticatedUser(headers: Headers): Promise<User | nul
   const header = headers.get("x-ms-client-principal");
 
   if (!header) {
-    // Development mode: Always return mock authenticated user
-    // This allows testing the authenticated UI locally
     if (process.env.NODE_ENV === "development") {
       const mockUser = await prisma.user.upsert({
         where: { email: "dev@localhost.local" },
@@ -42,7 +36,6 @@ export async function getAuthenticatedUser(headers: Headers): Promise<User | nul
       return mockUser;
     }
 
-    // Production: No auth header = anonymous user (blocked by Azure SWA gateway)
     return null;
   }
 
@@ -56,12 +49,10 @@ export async function getAuthenticatedUser(headers: Headers): Promise<User | nul
     return null;
   }
 
-  // Validate authenticated role
   if (!principal.userRoles.includes("authenticated")) {
     return null;
   }
 
-  // JIT Sync: Upsert user in database (keyed on email for multi-provider support)
   const user = await prisma.user.upsert({
     where: { email: principal.userDetails },
     update: {

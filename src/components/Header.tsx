@@ -1,9 +1,7 @@
-// Global Header Component
-// Brand left, auth state + logout right
-
 import { headers } from "next/headers";
 import { getAuthenticatedUser } from "@/lib/auth";
 import Link from "next/link";
+import LogoutButton from "@/components/auth/LogoutButton";
 
 export default async function Header() {
   const headersList = await headers();
@@ -12,12 +10,10 @@ export default async function Header() {
   return (
     <header className="bg-secondary border-b border-accent">
       <div className="container flex items-center justify-between p-md">
-        {/* Brand */}
         <Link href="/" className="text-xl font-bold text-accent">
           TheCord
         </Link>
 
-        {/* Auth State */}
         <div className="flex items-center gap-md">
           {user ? (
             <>
@@ -25,15 +21,10 @@ export default async function Header() {
                 Servers
               </Link>
               <span className="text-sm text-secondary">{user.email}</span>
-              <a
-                href="/.auth/logout?post_logout_redirect_uri=/"
-                className="btn btn-ghost btn-sm"
-              >
-                Logout
-              </a>
+              <LogoutButton />
             </>
           ) : (
-            <a href="/.auth/login/google" className="btn btn-sm">
+            <a href="/.auth/login/google?post_login_redirect_uri=/&prompt=select_account" className="btn btn-sm">
               Login
             </a>
           )}

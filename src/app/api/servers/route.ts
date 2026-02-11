@@ -1,6 +1,3 @@
-// Server CRUD: Create Server
-// Authorization: Any authenticated user can create a server (becomes owner)
-
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -14,7 +11,6 @@ import { ZodError } from "zod";
  * Creates a new server with the authenticated user as owner
  */
 export async function POST(request: NextRequest) {
-  // Step 1: Authenticate user
   const user = await getAuthenticatedUser(request.headers);
 
   if (!user) {
@@ -24,7 +20,6 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Step 2: Parse and validate request body with Zod
   let validatedData;
   try {
     const body = await request.json();
@@ -42,11 +37,10 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Step 3: Create server + owner membership in transaction
   const server = await prisma.server.create({
     data: {
       name: validatedData.name,
-      inviteCode: nanoid(10), // Generate unique invite code
+      inviteCode: nanoid(10),
       isRestricted: validatedData.isRestricted,
       ownerId: user.id,
       members: {

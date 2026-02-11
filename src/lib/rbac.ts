@@ -1,6 +1,3 @@
-// RBAC Authorization Helpers
-// Implements TheCord authorization matrix with role-based permissions
-
 import { prisma } from "./prisma";
 import { MemberRole } from "@prisma/client";
 
@@ -55,7 +52,6 @@ export async function canPost(userId: string, serverId: string): Promise<boolean
 
   if (!server) return false;
 
-  // In restricted servers, guests cannot post
   if (server.isRestricted && member.role === MemberRole.GUEST) {
     return false;
   }
