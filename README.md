@@ -4,8 +4,6 @@
 
 **Produktionsmiljö:** [https://nice-meadow-08f13c403.2.azurestaticapps.net]
 
----
-
 ## Om Projektet
 
 TheCord är en social plattform för slutna användargrupper, utvecklad som projektuppgift för kursen Molntjänster och säkerhet. Syftet är att demonstrera säker molndrift med automatiserade flöden och rollbaserad åtkomstkontroll.
@@ -39,8 +37,6 @@ All input från användare valideras med Zod-scheman före databas operationer. 
 ### API Management och Rate Limiting
 
 Azure API Management fungerar som reverse proxy framför Static Web App, vilket möjliggör infrastruktur-nivå säkerhet. APIM applicerar rate limiting baserat på IP-adress (15 anrop per 60 sekunder) innan trafik når Next.js-applikationen. Detta skyddar mot DoS/Flood-attacker och exponerar `x-rate-limit-remaining` header för klienter. Eftersom Azure SWA i Next.js Hybrid Mode inte stöder backend linking konfigureras APIM som front-proxy istället, vilket är enterprise-standard mönster för API gateway-krav.
-
----
 
 ## Teknisk Struktur & Navigation
 
@@ -137,8 +133,6 @@ Endast nödvändig persondata lagras (`email`, `azureId`, `name`). Inga känslig
 
 **Rate Limiting:** Implementerat via Azure API Management som agerar reverse proxy framför applikationen. IP-baserad throttling (15 anrop per 60 sekunder) skyddar mot flood-attacker på infrastrukturnivå innan trafik når Next.js. Policy definierad i `/infra/apim/rate-limit-policy.xml`.
 
----
-
 ## Användarscenarier
 
 Ett typiskt flöde börjar med att en användare skapar en server genom att ange namn och välja om servern ska vara restricted (vilket begränsar gästers möjlighet att posta). Systemet genererar en unik inbjudningskod och användaren kan dela länken med andra anvöndare. När en mottagare klickar på länken autentiseras de via Google OAuth om de inte redan är inloggade, och läggs automatiskt till som Guest i servern.
@@ -170,8 +164,6 @@ PostgreSQL körs i Supabase med connection pooling via Prisma. Två connection s
 
 Migrationer körs automatiskt i CI/CD-pipeline före deployment, liknar Migrations med Entity Framework i .NET.
 
----
-
 ## Kända Begränsningar
 
 Observability saknas i form av Application Insights eller liknande telemetri-lösning, vilket innebär att det inte finns real-time övervakning av fel eller prestanda i produktion.
@@ -189,8 +181,6 @@ Största tekniska utmaningen var Azure Static Web Apps auth-loop där Next.js mi
 Next.js 16 introducerade breaking changes där route parameters blev asynkrona, vilket krävde refaktorering av alla dynamic routes. Prisma migrations krävde separat DIRECT_URL.
 
 Arkitektur kompromisser inkluderar polling istället för WebSockets för enkelhet, monolitisk app istället för microservices för projektets omfattning, och en hybrid Next.js applikation som kombinerar FE-BE med inbyggda routes som körs på gemensam Node, istället för separat .NET backend server resurs.
-
----
 
 ## Installation och Lokal Utveckling
 
