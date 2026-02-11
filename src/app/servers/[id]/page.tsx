@@ -79,25 +79,35 @@ export default async function ServerChatPage({ params }: ServerChatPageProps) {
   }
 
   return (
-    <div style={{
-      display: "grid",
-      gridTemplateColumns: "1fr 300px",
-      height: "calc(100vh - 140px)",
-      gap: "0"
-    }}>
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "1fr 300px",
+        height: "100%",
+        width: "100%",
+        overflow: "hidden",
+      }}
+    >
       {/* Main Chat Area */}
-      <div style={{
-        display: "flex",
-        flexDirection: "column",
-        borderRight: "1px solid var(--color-border)",
-        background: "var(--color-bg-primary)"
-      }}>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          height: "100%",
+          borderRight: "1px solid var(--color-border)",
+          background: "var(--color-bg-primary)",
+          overflow: "hidden",
+        }}
+      >
         {/* Chat Header */}
-        <div style={{
-          padding: "var(--space-lg)",
-          borderBottom: "1px solid var(--color-border)",
-          background: "var(--color-bg-secondary)"
-        }}>
+        <div
+          style={{
+            padding: "var(--space-lg)",
+            borderBottom: "1px solid var(--color-border)",
+            background: "var(--color-bg-secondary)",
+            flexShrink: 0,
+          }}
+        >
           <div className="flex items-center gap-md">
             <div
               className="avatar bg-accent"
@@ -107,7 +117,7 @@ export default async function ServerChatPage({ params }: ServerChatPageProps) {
             </div>
             <div className="flex-1">
               <h1 className="text-xl font-bold mb-0">{server.name}</h1>
-              <p className="text-sm text-secondary">
+              <p className="text-sm text-secondary" style={{ margin: 0 }}>
                 {server.members.length} members
                 {server.isRestricted && " • Restricted"}
               </p>
@@ -119,32 +129,34 @@ export default async function ServerChatPage({ params }: ServerChatPageProps) {
         </div>
 
         {/* Chat Container (Messages + Input) */}
-        <ChatContainer
-          serverId={serverId}
-          currentMember={{
-            id: member.id,
-            role: member.role,
-            user: {
-              id: user.id,
-              name: user.name,
-              email: user.email,
-            },
-          }}
-          isRestricted={server.isRestricted}
-        />
+        <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+          <ChatContainer
+            serverId={serverId}
+            currentMember={{
+              id: member.id,
+              role: member.role,
+              user: {
+                id: user.id,
+                name: user.name,
+                email: user.email,
+              },
+            }}
+            isRestricted={server.isRestricted}
+          />
+        </div>
       </div>
 
       {/* Members Sidebar */}
-      <div style={{
-        background: "var(--color-bg-secondary)",
-        overflow: "hidden",
-        display: "flex",
-        flexDirection: "column"
-      }}>
-        <MembersList
-          members={server.members}
-          currentUserId={user.id}
-        />
+      <div
+        style={{
+          background: "var(--color-bg-secondary)",
+          height: "100%",
+          overflow: "hidden",
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
+        <MembersList members={server.members} currentUserId={user.id} />
       </div>
     </div>
   );

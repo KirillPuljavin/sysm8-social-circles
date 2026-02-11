@@ -1,6 +1,12 @@
 export default function Footer() {
   return (
-    <footer className="bg-secondary border-t border-accent mt-auto">
+    <footer
+      style={{
+        background: "var(--color-bg-secondary)",
+        borderTop: "1px solid var(--color-border)",
+        flexShrink: 0,
+      }}
+    >
       <div className="container p-xl">
         <div className="grid grid-cols-3 gap-xl mb-lg">
           <div>

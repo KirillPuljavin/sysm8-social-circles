@@ -194,9 +194,10 @@ export default function ChatContainer({
         display: "flex",
         flexDirection: "column",
         height: "100%",
+        overflow: "hidden",
       }}
     >
-      <div style={{ flex: 1, overflow: "hidden" }}>
+      <div style={{ flex: 1, overflow: "hidden", minHeight: 0 }}>
         <MessageList
           serverId={serverId}
           messages={messages}
@@ -212,6 +213,7 @@ export default function ChatContainer({
           padding: "var(--space-lg)",
           borderTop: "1px solid var(--color-border)",
           background: "var(--color-bg-secondary)",
+          flexShrink: 0,
         }}
       >
         <MessageInput

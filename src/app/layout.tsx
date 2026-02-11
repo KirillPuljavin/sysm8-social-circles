@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "@/styles/theme.scss";
 import Header from "@/components/Header";
-import Footer from "@/components/Footer";
+import ConditionalFooter from "@/components/ConditionalFooter";
 import AuthCleanupGuard from "@/components/auth/AuthCleanupGuard";
 
 const geistSans = Geist({
@@ -27,13 +27,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} flex flex-col`} style={{ minHeight: '100vh' }}>
+      <body className={`${geistSans.variable} ${geistMono.variable}`} style={{ height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <AuthCleanupGuard />
         <Header />
-        <main className="flex-1">
+        <main style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', background: 'var(--color-bg-primary)' }}>
           {children}
         </main>
-        <Footer />
+        <ConditionalFooter />
       </body>
     </html>
   );

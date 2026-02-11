@@ -26,6 +26,7 @@ export default function MessageList({
   const [hasMoreMessages, setHasMoreMessages] = useState(true);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [showNewMessagesPopup, setShowNewMessagesPopup] = useState(false);
+  const wasAtBottomRef = useRef(true);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -150,13 +151,16 @@ export default function MessageList({
     );
   };
 
-  // Mark messages as read when at bottom
+  // Track scroll position and mark messages as read
   useEffect(() => {
     const container = scrollContainerRef.current;
     if (!container) return;
 
     const handleScroll = () => {
-      if (isUserAtBottom()) {
+      const atBottom = isUserAtBottom();
+      wasAtBottomRef.current = atBottom;
+
+      if (atBottom) {
         setShowNewMessagesPopup(false);
         // Mark latest message as read
         const latestMessage = messages[messages.length - 1];
@@ -170,9 +174,9 @@ export default function MessageList({
     return () => container.removeEventListener("scroll", handleScroll);
   }, [messages, setLastReadMessageId]);
 
-  // Scroll to bottom when messages update (only if at bottom)
+  // Scroll to bottom when messages update (only if user WAS at bottom)
   useEffect(() => {
-    if (isUserAtBottom() || messages.length === 1) {
+    if (wasAtBottomRef.current || messages.length === 1) {
       scrollToBottom();
       // Mark as read
       const latestMessage = messages[messages.length - 1];
