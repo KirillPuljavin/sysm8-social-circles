@@ -3,7 +3,6 @@
 
 import { headers } from "next/headers";
 import { getAuthenticatedUser } from "@/lib/auth";
-import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import ServersList from "@/components/ServersList";
 
@@ -11,9 +10,9 @@ export default async function ServersPage() {
   const headersList = await headers();
   const user = await getAuthenticatedUser(headersList);
 
-  // Middleware should catch this, but double-check
+  // Azure SWA blocks unauthenticated users at edge, but defensive check for local dev
   if (!user) {
-    redirect("/");
+    return <div>Unauthorized</div>; // Should never happen in production
   }
 
   // Fetch user's servers (via membership)
