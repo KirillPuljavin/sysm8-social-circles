@@ -1,6 +1,7 @@
 # TheCord - Social Webbapplikation
 
 **Kurs:** Molntjänster och säkerhet (Practical DevOps Production)
+
 **Produktionsmiljö:** [https://nice-meadow-08f13c403.2.azurestaticapps.net]
 
 ---
