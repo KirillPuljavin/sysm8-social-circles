@@ -33,7 +33,7 @@ export default async function Header() {
               </a>
             </>
           ) : (
-            <a href="/.auth/login/github" className="btn btn-sm">
+            <a href="/.auth/login/google" className="btn btn-sm">
               Login
             </a>
           )}
