@@ -3,6 +3,7 @@ import { getAuthenticatedUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { MemberRole } from "@prisma/client";
+import Link from "next/link";
 
 interface InvitePageProps {
   params: Promise<{ code: string }>;
@@ -39,9 +40,9 @@ export default async function InvitePage({ params }: InvitePageProps) {
           <p className="text-secondary mb-xl">
             This invite link is invalid or has expired. Please ask the server owner for a new invite.
           </p>
-          <a href="/servers" className="btn">
+          <Link href="/servers" className="btn">
             Back to Servers
-          </a>
+          </Link>
         </div>
       </main>
     );

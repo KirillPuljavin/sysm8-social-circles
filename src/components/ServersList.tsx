@@ -205,7 +205,7 @@ export default function ServersList({ initialServers }: ServersListProps) {
 
       {/* Actions */}
       <div className="flex gap-sm">
-        <button className="btn flex-1">Open</button>
+        <a href={`/servers/${server.id}`} className="btn flex-1">Open</a>
         <button
           className="btn"
           onClick={() => onCopyInvite(server.inviteCode)}

@@ -8,23 +8,30 @@ export default async function Header() {
   const user = await getAuthenticatedUser(headersList);
 
   return (
-    <header className="bg-secondary border-b border-accent">
-      <div className="container flex items-center justify-between p-md">
-        <Link href="/" className="text-xl font-bold text-accent">
-          TheCord
-        </Link>
+    <header className="header">
+      <div className="header-container">
+        <div className="header-nav">
+          <Link href="/" className="header-brand">
+            TheCord
+          </Link>
+          {user && (
+            <Link href="/servers" className="header-nav-link">
+              Servers
+            </Link>
+          )}
+        </div>
 
-        <div className="flex items-center gap-md">
+        <div className="header-auth">
           {user ? (
             <>
-              <Link href="/servers" className="text-sm text-primary hover:text-accent">
-                Servers
-              </Link>
-              <span className="text-sm text-secondary">{user.email}</span>
+              <div className="header-user">{user.email}</div>
               <LogoutButton />
             </>
           ) : (
-            <a href="/.auth/login/google?post_login_redirect_uri=/&prompt=select_account" className="btn btn-sm">
+            <a
+              href="/.auth/login/google?post_login_redirect_uri=/&prompt=select_account"
+              className="btn btn-sm"
+            >
               Login
             </a>
           )}
