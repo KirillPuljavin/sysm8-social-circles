@@ -327,7 +327,7 @@ export default function MessageList({
             fontSize: "0.875rem",
           }}
         >
-          📜 You&apos;ve reached the top of this conversation
+          You&apos;ve reached the top of this conversation
         </div>
       )}
       {loadingOlder && (
