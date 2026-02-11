@@ -217,6 +217,21 @@ export default function MessageList({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loadingOlder, hasMoreMessages, messages]);
 
+  // Show loading state during initial fetch
+  if (isInitialLoad && messages.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-center p-xl">
+          <div className="text-4xl mb-md" style={{ animation: "pulse 1.5s ease-in-out infinite" }}>
+            💬
+          </div>
+          <p className="text-secondary">Loading messages...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show empty state only after initial load completes
   if (messages.length === 0) {
     return (
       <div className="flex items-center justify-center h-full">
