@@ -1,7 +1,7 @@
 # TheCord - Social Webbapplikation
 
 **Kurs:** Molntjänster och säkerhet (Practical DevOps Production)
-**Produktionsmiljö:** [https://jolly-cliff-0d07a3a1e.5.azurestaticapps.net]
+**Produktionsmiljö:** [https://nice-meadow-08f13c403.2.azurestaticapps.net]
 
 ---
 
@@ -158,7 +158,7 @@ Meddelandeborttagning följer en fyrstegsregel: alla kan radera sina egna meddel
 
 ## Arkitektoniska Beslut
 
-Azure Static Web Apps valdes för att uppgiften specificerar Azure som miljö. Plattformen erbjuder inbyggd autentisering på edge-nivå vilket eliminerar behovet av autentiseringsmiddleware och reducerar attack möjligheter.
+Valet av Azure Static Web Apps (SWA) som primär plattform möjliggör användning av Managed Authentication, vilket innebär att autentiseringen sker på edge-nivå via den inbyggda infrastrukturen. Genom att delegera identitetshanteringen uppnås en strikt separation mellan autentisering (plattformstyrd) och auktorisering (applikationsstyrd), vilket minskar attackytan då hantering av känsliga inloggningsuppgifter undviks helt. Detta medger fullt fokus på Role-Based Access Control (RBAC) inom affärslogiken, där verifierade "claims" från Azure används för att styra behörigheter på ett säkert och spårbart sätt.
 
 För realtidsuppdateringar av meddelanden används 3-sekunders polling istället för WebSockets. Detta beslut baserades på att Azure Static Web Apps kräver separat Azure SignalR-tjänst för WebSocket-support vilket innebär extra kostnad och komplexitet. För projektets omfattning med begränsat antal samtidiga användare är polling-lösningen tillräcklig.
 
@@ -218,8 +218,3 @@ I utvecklingsläge används en mock-användare vilket eliminerar behovet av OAut
 Förutom denna README finns detaljerad git-historik som spårar varje features utveckling från branch till Pull Request till deployment. Varje commit följer conventional commits-format med prefix som feat, fix, docs, och refactor.
 
 Inline-dokumentation finns i källkoden där RBAC-funktioner kommenteras med regler och användningsexempel, API-routes dokumenteras med parameter-typer och returvärden, och Zod-scheman inkluderar felmeddelanden för varje validering.
-
----
-
-**Sist uppdaterad:** 2026-02-11
-**Status:** Feature-complete för kursuppgift
