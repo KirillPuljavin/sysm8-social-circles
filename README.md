@@ -39,6 +39,10 @@ Säkerhetsheaders konfigureras i `staticwebapp.config.json` och inkluderar Conte
 
 All input från användare valideras med Zod-scheman före databas operationer. Varje API-endpoint parsar request body genom ett schema som definierar tillåtna fält, datatyper, och constraints. Valideringsfel returneras med specifika felmeddelanden som indikerar vilket fält som bryter mot vilken regel.
 
+### API Management och Rate Limiting
+
+Azure API Management fungerar som reverse proxy framför Static Web App, vilket möjliggör infrastruktur-nivå säkerhet. APIM applicerar rate limiting baserat på IP-adress (15 anrop per 60 sekunder) innan trafik når Next.js-applikationen. Detta skyddar mot DoS/Flood-attacker och exponerar `x-rate-limit-remaining` header för klienter. Eftersom Azure SWA i Next.js Hybrid Mode inte stöder backend linking konfigureras APIM som front-proxy istället, vilket är enterprise-standard mönster för API gateway-krav.
+
 ---
 
 ## Teknisk Struktur & Navigation
@@ -138,7 +142,7 @@ Endast nödvändig persondata lagras (`email`, `azureId`, `name`). Inga känslig
 
 **CSRF:** Azure SWA hanterar CSRF-tokens automatiskt via SameSite cookies (samma domän där appen är i produktion).
 
-**Rate Limiting:** Inte implementerat i MVP (noterat som känd begränsning).
+**Rate Limiting:** Implementerat via Azure API Management som agerar reverse proxy framför applikationen. IP-baserad throttling (15 anrop per 60 sekunder) skyddar mot flood-attacker på infrastrukturnivå innan trafik når Next.js. Policy definierad i `/infra/apim/rate-limit-policy.xml`.
 
 ---
 
@@ -180,8 +184,6 @@ Migrationer körs automatiskt i CI/CD-pipeline före deployment, liknar Migratio
 ---
 
 ## Kända Begränsningar
-
-Rate limiting är inte implementerat vilket innebär att API:et saknar skydd mot flood-attacker. I en produktionsmiljö skulle detta lösas antingen genom Azure API Management eller middleware i applikationen.
 
 Observability saknas i form av Application Insights eller liknande telemetri-lösning, vilket innebär att det inte finns real-time övervakning av fel eller prestanda i produktion.
 

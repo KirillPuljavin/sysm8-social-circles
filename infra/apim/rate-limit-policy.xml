@@ -1,0 +1,27 @@
+<policies>
+    <!--
+        Azure API Management Policy (Reverse Proxy Configuration)
+        This policy is applied in Azure APIM and acts as a reverse proxy in front of the SWA application.
+        APIM URL → Rate Limiting Check → Backend (SWA)
+    -->
+    <inbound>
+        <base />
+        <rate-limit-by-key
+            calls="15"
+            renewal-period="60"
+            counter-key="@(context.Request.IpAddress)"
+            increment-condition="@(context.Response.StatusCode &lt; 400)"
+            remaining-calls-header-name="x-rate-limit-remaining" />
+
+        <set-backend-service backend-id="swa-backend" />
+    </inbound>
+    <backend>
+        <base />
+    </backend>
+    <outbound>
+        <base />
+    </outbound>
+    <on-error>
+        <base />
+    </on-error>
+</policies>
