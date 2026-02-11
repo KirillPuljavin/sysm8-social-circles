@@ -16,15 +16,11 @@ Applikationen tillåter användare att skapa servrar (motsvarande uppgiftens "ci
 
 Uppgiftskraven specificerar "circles" som användargrupper. I denna implementation används genomgående termen "Server" i kod och användargränssnitt. Detta är branschstandard inom community-plattformar som Discord och Slack, och representerar samma koncept: en avgränsad användargrupp med rollbaserad åtkomstkontroll. En Server är funktionellt samma som Circle.
 
----
-
 ## Teknisk Stack
 
 Applikationen är byggd med Next.js 16 (App Router) och TypeScript, med Prisma ORM som databas-abstraktion mot PostgreSQL i Supabase. Autentisering hanteras av Azure Static Web Apps inbyggda identitetslager med Google OAuth, vilket eliminerar behovet av dedikerad autentiseringsmiddleware. Styling genomförs med SCSS Modules enligt kurskrav, och all input valideras med Zod-scheman både på klient och server nivå.
 
 Projektet är driftsatt på Azure Static Web Apps i Hybrid Mode, vilket kombinerar statisk webbhosting med server-side rendering och API-routes. CI/CD-pipelinen är implementerad via GitHub Actions med OIDC-autentisering, vilket innebär att inga långlivade secrets lagras i repot.
-
----
 
 ## Arkitektur och Säkerhet
 
@@ -75,8 +71,6 @@ Projektet är uppbyggt för att maximera separation av ansvarsområden (Modulari
 - **`.github/workflows`** - CI/CD-pipeline med quality gates (lint, audit, test, migrations, deploy)
 - **`package.json`** - Beroenden (Next.js 16, Prisma, Zod, Vitest)
 
----
-
 ### CI/CD & Feature Slicing
 
 Funktionalitet har utvecklats och driftsatts i vertikala delar (t.ex. Auth, Server CRUD, Messaging). Varje feature har en dedikerad gren (`feature/*`) och en Pull Request (PR) som triggar automatiserade tester och byggsteg. Detta arbetssätt säkerställer att produktion aldrig innehåller ofärdig kod och att varje merge är en deploybar enhet. Dessutom så skapas det test-miljöer för varje PR i Azure SWA som kan testas parallelt och separat från main produktion miljön.
@@ -106,8 +100,6 @@ Om något steg misslyckas blockeras merge och deployment automatiskt.
 ### Säkerhetsautentisering i CI/CD
 
 OIDC (OpenID Connect) används för autentisering mellan GitHub Actions och Azure. Istället för att lagra statiska API-tokens i repository genererar GitHub dynamiska ID-tokens som löper ut efter fem minuter. Detta eliminerar risken för läckta credentials och följer zero-trust principer.
-
----
 
 ## Säkerhet & Integritet
 
@@ -155,8 +147,6 @@ Owner kan sedan promote utvalda medlemmar till Moderator-rollen, vilket ger dem 
 
 Meddelandeborttagning följer en fyrstegsregel: alla kan radera sina egna meddelanden, Moderator och Owner kan radera gäst-meddelanden, Moderator och Owner kan radera andra moderatorers meddelanden, men endast Owner kan radera Owner-meddelanden. Denna matris implementeras både i backend-validering och frontend-UI där raderingsknappar endast visas om användaren har behörighet.
 
----
-
 ## Arkitektoniska Beslut
 
 Valet av Azure Static Web Apps (SWA) som primär plattform möjliggör användning av Managed Authentication, vilket innebär att autentiseringen sker på edge-nivå via den inbyggda infrastrukturen. Genom att delegera identitetshanteringen uppnås en strikt separation mellan autentisering (plattformstyrd) och auktorisering (applikationsstyrd), vilket minskar attackytan då hantering av känsliga inloggningsuppgifter undviks helt. Detta medger fullt fokus på Role-Based Access Control (RBAC) inom affärslogiken, där verifierade "claims" från Azure används för att styra behörigheter på ett säkert och spårbart sätt.
@@ -164,8 +154,6 @@ Valet av Azure Static Web Apps (SWA) som primär plattform möjliggör användni
 För realtidsuppdateringar av meddelanden används 3-sekunders polling istället för WebSockets. Detta beslut baserades på att Azure Static Web Apps kräver separat Azure SignalR-tjänst för WebSocket-support vilket innebär extra kostnad och komplexitet. För projektets omfattning med begränsat antal samtidiga användare är polling-lösningen tillräcklig.
 
 Zod valdes för input-validering eftersom biblioteket genererar TypeScript-typer direkt från valideringsscheman, vilket säkerställer att frontend och backend delar samma type definitions. Detta eliminerar risk för type mismatches mellan API-kontrakt och implementering, och används istället för typiska DTOs (som är vanliga i .NET backend).
-
----
 
 ## Drift & Miljö
 
@@ -192,8 +180,6 @@ GDPR-compliance saknar användargränssnitt för data export och konto-radering,
 
 Testning är begränsad till grundläggande sanity-tester. RBAC-funktioner och API-endpoints saknar dedikerade enhetstester vilket innebär att validering sker manuellt.
 
----
-
 ## Reflektion och Lärandemål
 
 Projektet demonstrerar feature-by-feature development där varje funktionalitet isoleras, testas, och driftsätts oberoende. Detta arbetssätt möjliggör kontinuerlig delivery och reducerar risk för regression bugs.
@@ -211,8 +197,6 @@ Arkitektur kompromisser inkluderar polling istället för WebSockets för enkelh
 Projektet kräver Node.js 20 eller senare samt pnpm som package manager. Efter att ha klonat repository installeras dependencies med `pnpm install`. Databas-konfiguration sker via `.env` fil med `DATABASE_URL` och `DIRECT_URL` som pekar mot PostgreSQL-instans. Databasmigrationer körs med `pnpm exec prisma migrate deploy` följt av `pnpm exec prisma generate` för att generera Prisma client. Utvecklingsserver startas med `pnpm dev` och körs på localhost:3000.
 
 I utvecklingsläge används en mock-användare vilket eliminerar behovet av OAuth-konfiguration lokalt, som är praktiskt omöjligt pga säkerhetsskäl (localhost istället för produktion domän).
-
----
 
 ## Dokumentation
 
