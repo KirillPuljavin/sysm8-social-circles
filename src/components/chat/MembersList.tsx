@@ -28,8 +28,10 @@ export default function MembersList({
 }: MembersListProps) {
   const [membersList, setMembersList] = useState<Member[]>(members);
   const [updatingMemberId, setUpdatingMemberId] = useState<string | null>(null);
+  const [kickingMemberId, setKickingMemberId] = useState<string | null>(null);
 
   const isOwner = currentUserRole === MemberRole.OWNER;
+  const isModerator = currentUserRole === MemberRole.MODERATOR;
 
   const handleRoleChange = async (memberId: string, newRole: MemberRole) => {
     setUpdatingMemberId(memberId);
@@ -61,6 +63,37 @@ export default function MembersList({
       setUpdatingMemberId(null);
     }
   };
+
+  const handleKickMember = async (member: Member) => {
+    const displayName = member.user.name || member.user.email;
+    if (!confirm(`Kick ${displayName} from the server?`)) {
+      return;
+    }
+
+    setKickingMemberId(member.id);
+    try {
+      const res = await fetch(`/api/servers/${serverId}/members/${member.id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to kick member");
+      }
+
+      // Remove from local state
+      setMembersList((prev) => prev.filter((m) => m.id !== member.id));
+    } catch (error) {
+      console.error("Failed to kick member:", error);
+      alert(
+        error instanceof Error ? error.message : "Failed to kick member"
+      );
+    } finally {
+      setKickingMemberId(null);
+    }
+  };
+
   // Group members by role (use local state)
   const owners = membersList.filter((m) => m.role === MemberRole.OWNER);
   const moderators = membersList.filter((m) => m.role === MemberRole.MODERATOR);
@@ -79,6 +112,13 @@ export default function MembersList({
     const canManageRole =
       isOwner && member.role !== MemberRole.OWNER && !isCurrentUser;
     const isUpdating = updatingMemberId === member.id;
+
+    // Kick permissions: Owner can kick anyone (except self), Mod can kick guests
+    const canKick =
+      !isCurrentUser &&
+      member.role !== MemberRole.OWNER &&
+      (isOwner || (isModerator && member.role === MemberRole.GUEST));
+    const isKicking = kickingMemberId === member.id;
 
     return (
       <div
@@ -133,6 +173,26 @@ export default function MembersList({
               </select>
             )}
           </div>
+        )}
+
+        {/* Kick Button (Owner/Moderator) */}
+        {canKick && (
+          <button
+            onClick={() => handleKickMember(member)}
+            disabled={isKicking || isUpdating}
+            className="text-xs"
+            style={{
+              padding: "var(--space-xs) var(--space-sm)",
+              background: "var(--color-error)",
+              color: "white",
+              border: "none",
+              borderRadius: "var(--radius-sm)",
+              cursor: isKicking ? "not-allowed" : "pointer",
+              opacity: isKicking || isUpdating ? 0.5 : 1,
+            }}
+          >
+            {isKicking ? "..." : "Kick"}
+          </button>
         )}
       </div>
     );

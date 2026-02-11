@@ -205,6 +205,7 @@ export default function ChatContainer({
           onRetry={retryMessage}
           lastReadMessageId={lastReadMessageId}
           setLastReadMessageId={setLastReadMessageId}
+          currentMember={currentMember}
         />
       </div>
 

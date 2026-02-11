@@ -3,6 +3,7 @@ import { getAuthenticatedUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { MemberRole } from "@prisma/client";
 import { isServerOwner } from "@/lib/rbac";
+import { canKickMember } from "@/lib/rbac";
 import { updateMemberRoleSchema } from "@/lib/validations/member";
 
 /**
@@ -101,6 +102,57 @@ export async function PATCH(
     });
   } catch (error) {
     console.error("PATCH /api/servers/[id]/members/[memberId] error:", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * DELETE /api/servers/[id]/members/[memberId]
+ * Kick member from server
+ * Authorization: Owner can kick anyone (except self), Moderator can kick guests
+ */
+export async function DELETE(
+  request: NextRequest,
+  context: { params: Promise<{ id: string; memberId: string }> }
+) {
+  try {
+    const { id: serverId, memberId } = await context.params;
+
+    // Step 1: Authenticate user
+    const user = await getAuthenticatedUser(request.headers);
+
+    if (!user) {
+      return NextResponse.json(
+        { error: "Unauthorized: No valid session" },
+        { status: 401 }
+      );
+    }
+
+    // Step 2: Check if user can kick this member (RBAC)
+    const canKick = await canKickMember(user.id, memberId, serverId);
+
+    if (!canKick) {
+      return NextResponse.json(
+        { error: "Forbidden: You do not have permission to kick this member" },
+        { status: 403 }
+      );
+    }
+
+    // Step 3: Delete member
+    await prisma.member.delete({
+      where: { id: memberId },
+    });
+
+    // Step 4: Return success
+    return NextResponse.json({
+      success: true,
+      message: "Member kicked successfully",
+    });
+  } catch (error) {
+    console.error("DELETE /api/servers/[id]/members/[memberId] error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

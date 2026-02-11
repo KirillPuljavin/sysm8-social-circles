@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, Dispatch, SetStateAction, useState } from "react";
+import { MemberRole } from "@prisma/client";
 import type { ClientMessage } from "./ChatContainer";
 
 interface MessageListProps {
@@ -10,6 +11,15 @@ interface MessageListProps {
   onRetry: (message: ClientMessage) => Promise<void>;
   lastReadMessageId: string | null;
   setLastReadMessageId: (id: string) => void;
+  currentMember: {
+    id: string;
+    role: MemberRole;
+    user: {
+      id: string;
+      name: string | null;
+      email: string;
+    };
+  };
 }
 
 export default function MessageList({
@@ -19,6 +29,7 @@ export default function MessageList({
   onRetry,
   lastReadMessageId,
   setLastReadMessageId,
+  currentMember,
 }: MessageListProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -26,6 +37,7 @@ export default function MessageList({
   const [hasMoreMessages, setHasMoreMessages] = useState(true);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [showNewMessagesPopup, setShowNewMessagesPopup] = useState(false);
+  const [deletingMessageId, setDeletingMessageId] = useState<string | null>(null);
   const wasAtBottomRef = useRef(true);
 
   const scrollToBottom = () => {
@@ -124,6 +136,35 @@ export default function MessageList({
       console.error("Failed to load older messages:", err);
     } finally {
       setLoadingOlder(false);
+    }
+  };
+
+  const handleDeleteMessage = async (messageId: string) => {
+    if (!confirm("Delete this message?")) {
+      return;
+    }
+
+    setDeletingMessageId(messageId);
+    try {
+      const res = await fetch(`/api/servers/${serverId}/messages/${messageId}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to delete message");
+      }
+
+      // Remove from local state
+      setMessages((prev) => prev.filter((m) => m.id !== messageId));
+    } catch (error) {
+      console.error("Failed to delete message:", error);
+      alert(
+        error instanceof Error ? error.message : "Failed to delete message"
+      );
+    } finally {
+      setDeletingMessageId(null);
     }
   };
 
@@ -310,6 +351,19 @@ export default function MessageList({
             ? "var(--color-warning)"
             : "var(--color-text-secondary)";
 
+        // Delete permission logic (matches RBAC matrix)
+        const isOwnMessage = message.member.user.id === currentMember.user.id;
+        const isOwner = currentMember.role === MemberRole.OWNER;
+        const isModerator = currentMember.role === MemberRole.MODERATOR;
+
+        const canDelete =
+          isOwnMessage || // Anyone can delete own messages
+          (isOwner || isModerator) && message.member.role === "GUEST" || // Owner/Mod can delete guest messages
+          (isOwner || isModerator) && message.member.role === "MODERATOR" || // Owner/Mod can delete mod messages
+          isOwner && message.member.role === "OWNER"; // Only owner can delete owner messages
+
+        const isDeleting = deletingMessageId === message.id;
+
         return (
           <div key={message.id} className="flex gap-md">
             <div
@@ -356,6 +410,25 @@ export default function MessageList({
                     title={message.error || "Failed to send"}
                   >
                     ✗ Retry
+                  </button>
+                )}
+                {/* Delete Button (RBAC) */}
+                {canDelete && message.status === "SENT" && (
+                  <button
+                    onClick={() => handleDeleteMessage(message.id)}
+                    disabled={isDeleting}
+                    className="text-xs"
+                    style={{
+                      color: "var(--color-error)",
+                      cursor: isDeleting ? "not-allowed" : "pointer",
+                      opacity: isDeleting ? 0.5 : 0.7,
+                      background: "none",
+                      border: "none",
+                      padding: "0",
+                    }}
+                    title="Delete message"
+                  >
+                    {isDeleting ? "..." : "🗑️"}
                   </button>
                 )}
               </div>
