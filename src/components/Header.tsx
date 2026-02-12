@@ -2,6 +2,7 @@ import { headers } from "next/headers";
 import { getAuthenticatedUser } from "@/lib/auth";
 import Link from "next/link";
 import LogoutButton from "@/components/auth/LogoutButton";
+import DebugToggle from "@/components/DebugToggle";
 
 export default async function Header() {
   const headersList = await headers();
@@ -22,6 +23,7 @@ export default async function Header() {
         </div>
 
         <div className="header-auth">
+          {user && <DebugToggle />}
           {user ? (
             <>
               <div className="header-user">{user.email}</div>

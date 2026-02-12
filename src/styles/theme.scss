@@ -1526,3 +1526,167 @@ input[type="radio"] {
   white-space: nowrap;
   border-width: 0;
 }
+
+// ============================================================================
+// DEBUG MODE COMPONENTS
+// ============================================================================
+
+// Debug Toggle (Professional Slider Switch)
+.debug-toggle-container {
+  display: flex;
+  align-items: center;
+  margin: 0 var(--space-md);
+  padding: 0;
+  height: 24px;
+  line-height: 1;
+}
+
+.debug-toggle-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  cursor: pointer;
+  user-select: none;
+  margin: 0;
+  margin-bottom: 0 !important;
+  padding: 0;
+  line-height: 1;
+}
+
+.debug-toggle-text {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  font-weight: 500;
+  line-height: 1;
+  transition: color var(--transition-fast);
+
+  .debug-toggle-label:hover & {
+    color: var(--color-text-primary);
+  }
+}
+
+.debug-toggle-switch {
+  position: relative;
+  width: 44px;
+  height: 24px !important;
+  min-height: 24px !important;
+  max-height: 24px !important;
+  background: var(--color-bg-tertiary);
+  border: 2px solid var(--color-border);
+  border-radius: 12px;
+  padding: 0 !important;
+  cursor: pointer;
+  transition: all var(--transition-base);
+  vertical-align: middle;
+  box-sizing: border-box;
+  gap: 0;
+
+  &:hover {
+    background: var(--color-bg-input);
+    border-color: var(--color-text-tertiary);
+  }
+
+  &.active {
+    background: var(--color-accent-blue);
+    border-color: var(--color-accent-blue);
+
+    &:hover {
+      background: var(--color-accent-blue-hover);
+      border-color: var(--color-accent-blue-hover);
+    }
+
+    .debug-toggle-slider {
+      left: calc(100% - 22px);
+      background: var(--color-bg-primary);
+    }
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-border-focus);
+    outline-offset: 2px;
+  }
+}
+
+.debug-toggle-slider {
+  position: absolute;
+  top: 50%;
+  left: 2px;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  background: var(--color-text-tertiary);
+  border-radius: 50%;
+  transition: all var(--transition-base);
+
+  .debug-toggle-switch.active & {
+    transform: translateY(-50%);
+  }
+}
+
+// Debug Console (Bottom of Chat)
+.debug-console {
+  position: sticky;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  background: var(--color-bg-secondary);
+  border-top: 2px solid;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  z-index: 100;
+
+  &.debug-console-idle {
+    border-top-color: var(--color-text-tertiary);
+    background: rgba(107, 107, 107, 0.1);
+  }
+
+  &.debug-console-success {
+    border-top-color: var(--color-success);
+    background: rgba(74, 222, 128, 0.1);
+  }
+
+  &.debug-console-error {
+    border-top-color: var(--color-error);
+    background: rgba(248, 113, 113, 0.1);
+  }
+}
+
+.debug-console-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.debug-console-icon {
+  font-size: 1rem;
+}
+
+.debug-console-method {
+  font-weight: 600;
+  color: var(--color-accent-blue);
+  text-transform: uppercase;
+}
+
+.debug-console-endpoint {
+  flex: 1;
+  color: var(--color-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.debug-console-status {
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+
+.debug-console-message {
+  padding: var(--space-sm) var(--space-md);
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+}
+

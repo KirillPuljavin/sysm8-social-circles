@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { MemberRole } from "@prisma/client";
+import { useDebug } from "@/contexts/DebugContext";
 
 interface MessageInputProps {
   userRole: MemberRole;
@@ -15,15 +16,21 @@ export default function MessageInput({
   onSendMessage,
 }: MessageInputProps) {
   const [content, setContent] = useState("");
+  const { isDebug } = useDebug();
 
   // Check if user can post
   const canPost = !isRestricted || userRole !== MemberRole.GUEST;
+
+  // In debug mode, always show input even if user can't post
+  const shouldShowInput = canPost || isDebug;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!content.trim()) return;
-    if (!canPost) return;
+
+    // In debug mode, allow submission even if user can't post (to test API rejection)
+    if (!canPost && !isDebug) return;
 
     // Send message (optimistic - doesn't wait)
     void onSendMessage(content.trim());
@@ -41,7 +48,7 @@ export default function MessageInput({
     }
   };
 
-  if (!canPost) {
+  if (!shouldShowInput) {
     return (
       <div className="alert alert-warning">
         <p className="text-sm" style={{ margin: 0 }}>
@@ -52,6 +59,14 @@ export default function MessageInput({
   }
 
   return (
+    <>
+      {!canPost && isDebug && (
+        <div className="alert alert-info" style={{ marginBottom: "var(--space-sm)" }}>
+          <p className="text-sm" style={{ margin: 0 }}>
+            🐛 Debug Mode: You are a GUEST in a restricted server. Posting will fail with 403.
+          </p>
+        </div>
+      )}
     <form onSubmit={handleSubmit} className="message-input-form">
       <div className="flex gap-sm">
         <textarea
@@ -72,5 +87,6 @@ export default function MessageInput({
         </button>
       </div>
     </form>
+    </>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { MemberRole } from "@prisma/client";
+import { useDebug } from "@/contexts/DebugContext";
 
 interface Member {
   id: string;
@@ -30,6 +31,7 @@ export default function MembersList({
   const [updatingMemberId, setUpdatingMemberId] = useState<string | null>(null);
   const [kickingMemberId, setKickingMemberId] = useState<string | null>(null);
   const [expandedMemberId, setExpandedMemberId] = useState<string | null>(null);
+  const { isDebug, logAction } = useDebug();
 
   const isOwner = currentUserRole === MemberRole.OWNER;
   const isModerator = currentUserRole === MemberRole.MODERATOR;
@@ -44,12 +46,22 @@ export default function MembersList({
         body: JSON.stringify({ role: newRole }),
       });
 
+      const data = await res.json();
+
       if (!res.ok) {
-        const data = await res.json();
+        // Log debug action for failed role change
+        if (isDebug) {
+          logAction("PATCH", `/api/servers/${serverId}/members/${memberId}`, res.status, data.error || "Failed to update role");
+        }
         throw new Error(data.error || "Failed to update role");
       }
 
-      const { member: updatedMember } = await res.json();
+      // Log debug action for successful role change
+      if (isDebug) {
+        logAction("PATCH", `/api/servers/${serverId}/members/${memberId}`, res.status, `Role updated to ${newRole}`);
+      }
+
+      const { member: updatedMember } = data;
 
       // Update local state
       setMembersList((prev) =>
@@ -78,9 +90,19 @@ export default function MembersList({
         credentials: "include",
       });
 
+      const data = await res.json();
+
       if (!res.ok) {
-        const data = await res.json();
+        // Log debug action for failed kick
+        if (isDebug) {
+          logAction("DELETE", `/api/servers/${serverId}/members/${member.id}`, res.status, data.error || "Failed to kick member");
+        }
         throw new Error(data.error || "Failed to kick member");
+      }
+
+      // Log debug action for successful kick
+      if (isDebug) {
+        logAction("DELETE", `/api/servers/${serverId}/members/${member.id}`, res.status, "Member kicked");
       }
 
       // Remove from local state
@@ -121,7 +143,10 @@ export default function MembersList({
       (isOwner || (isModerator && member.role === MemberRole.GUEST));
     const isKicking = kickingMemberId === member.id;
 
-    const hasActions = canManageRole || canKick;
+    // In debug mode, show actions for all members (except current user for kick)
+    const showManageRole = canManageRole || (isDebug && member.role !== MemberRole.OWNER && !isCurrentUser);
+    const showKick = canKick || (isDebug && !isCurrentUser && member.role !== MemberRole.OWNER);
+    const hasActions = showManageRole || showKick;
 
     const toggleExpand = () => {
       if (!hasActions) return;
@@ -162,29 +187,35 @@ export default function MembersList({
         {/* Expandable Actions Row */}
         {hasActions && isExpanded && (
           <div className="member-actions">
-            {/* Role Management (Owner only) */}
-            {canManageRole && (
+            {/* Role Management (Owner only, or debug mode) */}
+            {showManageRole && (
               <div className="flex-1">
                 {isUpdating ? (
                   <span className="text-xs text-secondary">Updating role...</span>
                 ) : (
-                  <select
-                    value={member.role}
-                    onChange={(e) => {
-                      e.stopPropagation();
-                      handleRoleChange(member.id, e.target.value as MemberRole);
-                    }}
-                    className="member-role-select"
-                  >
-                    <option value="MODERATOR">Moderator</option>
-                    <option value="GUEST">Guest</option>
-                  </select>
+                  <>
+                    <select
+                      value={member.role}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        handleRoleChange(member.id, e.target.value as MemberRole);
+                      }}
+                      className="member-role-select"
+                      title={isDebug && !canManageRole ? "🐛 Debug: Unauthorized role change (will fail)" : "Change member role"}
+                    >
+                      <option value="MODERATOR">Moderator</option>
+                      <option value="GUEST">Guest</option>
+                    </select>
+                    {isDebug && !canManageRole && (
+                      <span className="text-xs" style={{ marginLeft: "4px" }}>🐛</span>
+                    )}
+                  </>
                 )}
               </div>
             )}
 
-            {/* Kick Button (Owner/Moderator) */}
-            {canKick && (
+            {/* Kick Button (Owner/Moderator, or debug mode) */}
+            {showKick && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -192,8 +223,10 @@ export default function MembersList({
                 }}
                 disabled={isKicking || isUpdating}
                 className="member-kick-btn"
+                title={isDebug && !canKick ? "🐛 Debug: Unauthorized kick (will fail)" : "Kick member from server"}
               >
                 {isKicking ? "Kicking..." : "Kick Member"}
+                {isDebug && !canKick && " 🐛"}
               </button>
             )}
           </div>

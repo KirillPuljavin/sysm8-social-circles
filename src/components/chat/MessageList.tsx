@@ -3,6 +3,7 @@
 import { useEffect, useRef, Dispatch, SetStateAction, useState } from "react";
 import { MemberRole } from "@prisma/client";
 import type { ClientMessage } from "./ChatContainer";
+import { useDebug } from "@/contexts/DebugContext";
 
 interface MessageListProps {
   serverId: string;
@@ -40,6 +41,7 @@ export default function MessageList({
   const [deletingMessageId, setDeletingMessageId] = useState<string | null>(null);
   const [hoveredMessageId, setHoveredMessageId] = useState<string | null>(null);
   const wasAtBottomRef = useRef(true);
+  const { isDebug, logAction } = useDebug();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -152,9 +154,19 @@ export default function MessageList({
         credentials: "include",
       });
 
+      const data = await res.json();
+
       if (!res.ok) {
-        const data = await res.json();
+        // Log debug action for failed delete
+        if (isDebug) {
+          logAction("DELETE", `/api/servers/${serverId}/messages/${messageId}`, res.status, data.error || "Failed to delete message");
+        }
         throw new Error(data.error || "Failed to delete message");
+      }
+
+      // Log debug action for successful delete
+      if (isDebug) {
+        logAction("DELETE", `/api/servers/${serverId}/messages/${messageId}`, res.status, "Message deleted");
       }
 
       // Remove from local state
@@ -338,6 +350,9 @@ export default function MessageList({
           (isOwner || isModerator) && message.member.role === "MODERATOR" || // Owner/Mod can delete mod messages
           isOwner && message.member.role === "OWNER"; // Only owner can delete owner messages
 
+        // In debug mode, show delete button on all messages
+        const showDeleteButton = canDelete || isDebug;
+
         const isDeleting = deletingMessageId === message.id;
 
         return (
@@ -394,7 +409,7 @@ export default function MessageList({
             </div>
 
             {/* Delete Button (Hover-only, Right-aligned) */}
-            {canDelete && message.status === "SENT" && hoveredMessageId === message.id && (
+            {showDeleteButton && message.status === "SENT" && hoveredMessageId === message.id && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -402,9 +417,10 @@ export default function MessageList({
                 }}
                 disabled={isDeleting}
                 className="message-delete-btn"
-                title="Delete message"
+                title={isDebug && !canDelete ? "🐛 Debug: Unauthorized delete (will fail)" : "Delete message"}
               >
                 {isDeleting ? "Deleting..." : "× Delete"}
+                {isDebug && !canDelete && " 🐛"}
               </button>
             )}
           </div>
