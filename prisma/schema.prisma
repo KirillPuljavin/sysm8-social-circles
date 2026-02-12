@@ -82,8 +82,8 @@ model Message {
   sentAt   DateTime
   sequence Int
 
-  memberId String
-  member   Member @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  memberId String?
+  member   Member? @relation(fields: [memberId], references: [id], onDelete: SetNull)
 
   serverId String
   server   Server @relation(fields: [serverId], references: [id], onDelete: Cascade)

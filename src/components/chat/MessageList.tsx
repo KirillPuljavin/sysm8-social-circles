@@ -387,23 +387,28 @@ export default function MessageList({
       )}
 
       {messages.map((message) => {
-        const roleColor =
-          message.member.role === "OWNER"
-            ? "var(--color-accent-blue)"
-            : message.member.role === "MODERATOR"
-            ? "var(--color-warning)"
-            : "var(--color-text-secondary)";
+        // Handle deleted users (member is null when user account deleted)
+        const isDeletedUser = !message.member;
+
+        const roleColor = isDeletedUser
+          ? "var(--color-text-tertiary)"
+          : message.member.role === "OWNER"
+          ? "var(--color-accent-blue)"
+          : message.member.role === "MODERATOR"
+          ? "var(--color-warning)"
+          : "var(--color-text-secondary)";
 
         // Delete permission logic (matches RBAC matrix)
-        const isOwnMessage = message.member.user.id === currentMember.user.id;
+        const isOwnMessage = !isDeletedUser && message.member.user.id === currentMember.user.id;
         const isOwner = currentMember.role === MemberRole.OWNER;
         const isModerator = currentMember.role === MemberRole.MODERATOR;
 
-        const canDelete =
-          isOwnMessage || // Anyone can delete own messages
-          (isOwner || isModerator) && message.member.role === "GUEST" || // Owner/Mod can delete guest messages
-          (isOwner || isModerator) && message.member.role === "MODERATOR" || // Owner/Mod can delete mod messages
-          isOwner && message.member.role === "OWNER"; // Only owner can delete owner messages
+        const canDelete = isDeletedUser
+          ? false // Cannot delete messages from deleted users
+          : isOwnMessage || // Anyone can delete own messages
+            (isOwner || isModerator) && message.member.role === "GUEST" || // Owner/Mod can delete guest messages
+            (isOwner || isModerator) && message.member.role === "MODERATOR" || // Owner/Mod can delete mod messages
+            isOwner && message.member.role === "OWNER"; // Only owner can delete owner messages
 
         // In debug mode, show delete button on all messages
         const showDeleteButton = canDelete || isDebug;
@@ -448,12 +453,12 @@ export default function MessageList({
             )}
 
             <div className="avatar avatar-sm bg-tertiary message-avatar">
-              {message.member.user.email[0].toUpperCase()}
+              {isDeletedUser ? "?" : message.member.user.email[0].toUpperCase()}
             </div>
             <div className="message-content">
               <div className="message-header">
                 <span className="message-author" style={{ color: roleColor }}>
-                  {message.member.user.email}
+                  {isDeletedUser ? "[Deleted User]" : message.member.user.email}
                 </span>
                 <span className="message-timestamp">
                   {new Date(message.sentAt).toLocaleTimeString([], {

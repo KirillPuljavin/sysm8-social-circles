@@ -16,9 +16,14 @@ export default async function Header() {
             TheCord
           </Link>
           {user && (
-            <Link href="/servers" className="header-nav-link">
-              Servers
-            </Link>
+            <>
+              <Link href="/servers" className="header-nav-link">
+                Servers
+              </Link>
+              <Link href="/settings" className="header-nav-link">
+                Settings
+              </Link>
+            </>
           )}
         </div>
 
