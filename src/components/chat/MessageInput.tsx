@@ -52,20 +52,15 @@ export default function MessageInput({
   }
 
   return (
-    <form onSubmit={handleSubmit}>
+    <form onSubmit={handleSubmit} className="message-input-form">
       <div className="flex gap-sm">
         <textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Type a message... (Enter to send, Shift+Enter for new line)"
+          placeholder="Type a message..."
           maxLength={2000}
-          style={{
-            flex: 1,
-            minHeight: "60px",
-            maxHeight: "150px",
-            resize: "vertical",
-          }}
+          className="message-input-field"
         />
         <button
           type="submit"
@@ -76,9 +71,6 @@ export default function MessageInput({
           Send
         </button>
       </div>
-      <p className="text-xs text-tertiary" style={{ marginTop: "var(--space-sm)", marginBottom: 0 }}>
-        {content.length}/2000 characters
-      </p>
     </form>
   );
 }

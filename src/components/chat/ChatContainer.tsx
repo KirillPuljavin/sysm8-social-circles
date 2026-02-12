@@ -189,15 +189,8 @@ export default function ChatContainer({
   );
 
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        height: "100%",
-        overflow: "hidden",
-      }}
-    >
-      <div style={{ flex: 1, overflow: "hidden", minHeight: 0 }}>
+    <div className="chat-container">
+      <div className="chat-feed">
         <MessageList
           serverId={serverId}
           messages={messages}
@@ -209,14 +202,7 @@ export default function ChatContainer({
         />
       </div>
 
-      <div
-        style={{
-          padding: "var(--space-lg)",
-          borderTop: "1px solid var(--color-border)",
-          background: "var(--color-bg-secondary)",
-          flexShrink: 0,
-        }}
-      >
+      <div className="chat-input-wrapper">
         <MessageInput
           userRole={currentMember.role}
           isRestricted={isRestricted}
