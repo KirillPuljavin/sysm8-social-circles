@@ -1235,10 +1235,19 @@ input[type="radio"] {
   margin-left: calc(-1 * var(--space-sm));
   margin-right: calc(-1 * var(--space-sm));
   border-radius: var(--radius-md);
-  transition: background var(--transition-fast);
 
-  &:hover {
-    background: var(--color-bg-tertiary);
+  // Own messages - align right
+  &.message-own {
+    justify-content: flex-end;
+    margin-left: auto;
+    max-width: 80%;
+  }
+
+  // Other messages - align left (default)
+  &.message-other {
+    justify-content: flex-start;
+    margin-right: auto;
+    max-width: 80%;
   }
 }
 
@@ -1274,30 +1283,97 @@ input[type="radio"] {
   margin: 0;
 }
 
-.message-delete-btn {
-  position: absolute;
-  right: var(--space-sm);
-  top: 50%;
-  transform: translateY(-50%);
-  padding: var(--space-xs) var(--space-sm);
-  background: var(--color-error);
-  color: white;
-  border: none;
-  border-radius: var(--radius-sm);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-medium);
-  cursor: pointer;
-  white-space: nowrap;
-  box-shadow: var(--shadow-sm);
+.message-actions {
+  display: flex;
+  gap: var(--space-xs);
+  align-self: center;
+}
 
-  &:hover {
-    background: #dc2626;
+.message-edit-btn,
+.message-delete-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none !important;
+  border: none;
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  transition: color var(--transition-fast);
+  align-self: center;
+  min-width: auto !important;
+  min-height: auto !important;
+  width: 24px;
+  height: 24px;
+  box-shadow: none !important;
+  transform: none !important;
+
+  &:hover:not(:disabled) {
+    background: none !important;
+    transform: none !important;
+    box-shadow: none !important;
+  }
+
+  &:active {
+    background: none !important;
+    transform: none !important;
+    box-shadow: none !important;
   }
 
   &:disabled {
     opacity: 0.5;
     cursor: not-allowed;
   }
+}
+
+.message-edit-btn {
+  color: #60a5fa;
+
+  &:hover:not(:disabled) {
+    color: #3b82f6;
+  }
+}
+
+.message-delete-btn {
+  color: #f87171;
+
+  &:hover:not(:disabled) {
+    color: #dc2626;
+  }
+}
+
+.message-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  width: 100%;
+}
+
+.message-edit-textarea {
+  background: var(--color-bg-input);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+  font-size: var(--font-size-base);
+  line-height: 1.5;
+  padding: var(--space-sm);
+  resize: vertical;
+  min-height: 60px;
+  max-height: 200px;
+
+  &:focus {
+    outline: none;
+    border-color: var(--color-border-focus);
+  }
+}
+
+.message-edit-actions {
+  display: flex;
+  gap: var(--space-sm);
+  justify-content: flex-end;
 }
 
 // Members List Pattern

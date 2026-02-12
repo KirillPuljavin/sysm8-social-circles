@@ -40,6 +40,8 @@ export default function MessageList({
   const [showNewMessagesPopup, setShowNewMessagesPopup] = useState(false);
   const [deletingMessageId, setDeletingMessageId] = useState<string | null>(null);
   const [hoveredMessageId, setHoveredMessageId] = useState<string | null>(null);
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState("");
   const wasAtBottomRef = useRef(true);
   const { isDebug, logAction } = useDebug();
 
@@ -179,6 +181,59 @@ export default function MessageList({
     } finally {
       setDeletingMessageId(null);
     }
+  };
+
+  const handleEditMessage = async (messageId: string) => {
+    if (!editContent.trim()) {
+      setEditingMessageId(null);
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/servers/${serverId}/messages/${messageId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ content: editContent }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        // Log debug action for failed edit
+        if (isDebug) {
+          logAction("PATCH", `/api/servers/${serverId}/messages/${messageId}`, res.status, data.error || "Failed to edit message");
+        }
+        throw new Error(data.error || "Failed to edit message");
+      }
+
+      // Log debug action for successful edit
+      if (isDebug) {
+        logAction("PATCH", `/api/servers/${serverId}/messages/${messageId}`, res.status, "Message edited");
+      }
+
+      // Update local state
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === messageId ? { ...m, content: editContent } : m
+        )
+      );
+      setEditingMessageId(null);
+      setEditContent("");
+    } catch (error) {
+      console.error("Failed to edit message:", error);
+      alert(error instanceof Error ? error.message : "Failed to edit message");
+    }
+  };
+
+  const startEdit = (message: ClientMessage) => {
+    setEditingMessageId(message.id);
+    setEditContent(message.content);
+  };
+
+  const cancelEdit = () => {
+    setEditingMessageId(null);
+    setEditContent("");
   };
 
   // Initial fetch
@@ -354,14 +409,45 @@ export default function MessageList({
         const showDeleteButton = canDelete || isDebug;
 
         const isDeleting = deletingMessageId === message.id;
+        const isEditing = editingMessageId === message.id;
 
         return (
           <div
             key={message.id}
-            className="message-item"
+            className={`message-item ${isOwnMessage ? "message-own" : "message-other"}`}
             onMouseEnter={() => setHoveredMessageId(message.id)}
             onMouseLeave={() => setHoveredMessageId(null)}
           >
+            {/* Action Buttons - Left side for own messages */}
+            {isOwnMessage && message.status === "SENT" && hoveredMessageId === message.id && !isEditing && (
+              <div className="message-actions">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    startEdit(message);
+                  }}
+                  className="message-edit-btn"
+                  title="Edit message"
+                >
+                  ✏
+                </button>
+                {showDeleteButton && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteMessage(message.id);
+                    }}
+                    disabled={isDeleting}
+                    className="message-delete-btn"
+                    title={isDebug && !canDelete ? "🐛 Debug: Unauthorized delete (will fail)" : "Delete message"}
+                  >
+                    {isDeleting ? "..." : "×"}
+                    {isDebug && !canDelete && "🐛"}
+                  </button>
+                )}
+              </div>
+            )}
+
             <div className="avatar avatar-sm bg-tertiary message-avatar">
               {message.member.user.email[0].toUpperCase()}
             </div>
@@ -403,13 +489,49 @@ export default function MessageList({
                   </button>
                 )}
               </div>
-              <p className="message-text">
-                {message.content}
-              </p>
+              {isEditing ? (
+                <div className="message-edit-form">
+                  <textarea
+                    value={editContent}
+                    onChange={(e) => setEditContent(e.target.value)}
+                    className="message-edit-textarea"
+                    maxLength={2000}
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        handleEditMessage(message.id);
+                      }
+                      if (e.key === "Escape") {
+                        cancelEdit();
+                      }
+                    }}
+                  />
+                  <div className="message-edit-actions">
+                    <button
+                      onClick={() => handleEditMessage(message.id)}
+                      className="btn btn-sm"
+                      disabled={!editContent.trim()}
+                    >
+                      Save
+                    </button>
+                    <button
+                      onClick={cancelEdit}
+                      className="btn btn-sm btn-secondary"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <p className="message-text">
+                  {message.content}
+                </p>
+              )}
             </div>
 
-            {/* Delete Button (Hover-only, Right-aligned) */}
-            {showDeleteButton && message.status === "SENT" && hoveredMessageId === message.id && (
+            {/* Delete Button - Right side for other messages */}
+            {!isOwnMessage && showDeleteButton && message.status === "SENT" && hoveredMessageId === message.id && !isEditing && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -419,8 +541,8 @@ export default function MessageList({
                 className="message-delete-btn"
                 title={isDebug && !canDelete ? "🐛 Debug: Unauthorized delete (will fail)" : "Delete message"}
               >
-                {isDeleting ? "Deleting..." : "× Delete"}
-                {isDebug && !canDelete && " 🐛"}
+                {isDeleting ? "..." : "×"}
+                {isDebug && !canDelete && "🐛"}
               </button>
             )}
           </div>

@@ -1,11 +1,19 @@
 "use client";
 
 import { useDebug } from "@/contexts/DebugContext";
+import { useEffect, useState } from "react";
 
 export default function DebugConsole() {
   const { isDebug, latestAction } = useDebug();
+  const [mounted, setMounted] = useState(false);
 
-  if (!isDebug) {
+  // Prevent hydration mismatch
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMounted(true);
+  }, []);
+
+  if (!mounted || !isDebug) {
     return null;
   }
 

@@ -143,9 +143,9 @@ export default function MembersList({
       (isOwner || (isModerator && member.role === MemberRole.GUEST));
     const isKicking = kickingMemberId === member.id;
 
-    // In debug mode, show actions for all members (except current user for kick)
-    const showManageRole = canManageRole || (isDebug && member.role !== MemberRole.OWNER && !isCurrentUser);
-    const showKick = canKick || (isDebug && !isCurrentUser && member.role !== MemberRole.OWNER);
+    // In debug mode, show ALL actions (even on owners, except managing self)
+    const showManageRole = canManageRole || (isDebug && !isCurrentUser);
+    const showKick = canKick || (isDebug && !isCurrentUser);
     const hasActions = showManageRole || showKick;
 
     const toggleExpand = () => {
