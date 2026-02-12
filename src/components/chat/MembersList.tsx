@@ -201,14 +201,12 @@ export default function MembersList({
                         handleRoleChange(member.id, e.target.value as MemberRole);
                       }}
                       className="member-role-select"
-                      title={isDebug && !canManageRole ? "🐛 Debug: Unauthorized role change (will fail)" : "Change member role"}
+                      title={isDebug && !canManageRole ? "Debug: Unauthorized role change (will fail)" : "Change member role"}
                     >
+                      {isDebug && <option value="OWNER">Owner</option>}
                       <option value="MODERATOR">Moderator</option>
                       <option value="GUEST">Guest</option>
                     </select>
-                    {isDebug && !canManageRole && (
-                      <span className="text-xs" style={{ marginLeft: "4px" }}>🐛</span>
-                    )}
                   </>
                 )}
               </div>
@@ -223,10 +221,9 @@ export default function MembersList({
                 }}
                 disabled={isKicking || isUpdating}
                 className="member-kick-btn"
-                title={isDebug && !canKick ? "🐛 Debug: Unauthorized kick (will fail)" : "Kick member from server"}
+                title={isDebug && !canKick ? "Debug: Unauthorized kick (will fail)" : "Kick member from server"}
               >
                 {isKicking ? "Kicking..." : "Kick Member"}
-                {isDebug && !canKick && " 🐛"}
               </button>
             )}
           </div>

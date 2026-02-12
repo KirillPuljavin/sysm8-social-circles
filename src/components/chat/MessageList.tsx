@@ -439,10 +439,9 @@ export default function MessageList({
                     }}
                     disabled={isDeleting}
                     className="message-delete-btn"
-                    title={isDebug && !canDelete ? "🐛 Debug: Unauthorized delete (will fail)" : "Delete message"}
+                    title={isDebug && !canDelete ? "Debug: Unauthorized delete (will fail)" : "Delete message"}
                   >
                     {isDeleting ? "..." : "×"}
-                    {isDebug && !canDelete && "🐛"}
                   </button>
                 )}
               </div>
@@ -539,10 +538,9 @@ export default function MessageList({
                 }}
                 disabled={isDeleting}
                 className="message-delete-btn"
-                title={isDebug && !canDelete ? "🐛 Debug: Unauthorized delete (will fail)" : "Delete message"}
+                title={isDebug && !canDelete ? "Debug: Unauthorized delete (will fail)" : "Delete message"}
               >
                 {isDeleting ? "..." : "×"}
-                {isDebug && !canDelete && "🐛"}
               </button>
             )}
           </div>

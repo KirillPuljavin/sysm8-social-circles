@@ -63,7 +63,7 @@ export default function MessageInput({
       {!canPost && isDebug && (
         <div className="alert alert-info" style={{ marginBottom: "var(--space-sm)" }}>
           <p className="text-sm" style={{ margin: 0 }}>
-            🐛 Debug Mode: You are a GUEST in a restricted server. Posting will fail with 403.
+            Debug Mode: You are a GUEST in a restricted server. Posting will fail with 403.
           </p>
         </div>
       )}
