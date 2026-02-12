@@ -190,7 +190,7 @@ export default function ChatContainer({
 
   return (
     <div className="chat-container">
-      <div className="chat-messages">
+      <div className="chat-feed">
         <MessageList
           serverId={serverId}
           messages={messages}

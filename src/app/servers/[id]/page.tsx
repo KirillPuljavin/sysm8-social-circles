@@ -79,83 +79,39 @@ export default async function ServerChatPage({ params }: ServerChatPageProps) {
   }
 
   return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "1fr 300px",
-        height: "100%",
-        width: "100%",
-        overflow: "hidden",
-      }}
-    >
+    <div className="server-chat-page">
       {/* Main Chat Area */}
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          height: "100%",
-          borderRight: "1px solid var(--color-border)",
-          background: "var(--color-bg-primary)",
-          overflow: "hidden",
-        }}
-      >
-        {/* Chat Header */}
-        <div
-          style={{
-            padding: "var(--space-lg)",
-            borderBottom: "1px solid var(--color-border)",
-            background: "var(--color-bg-secondary)",
-            flexShrink: 0,
+      <div className="chat-main-area">
+        <ChatContainer
+          serverId={serverId}
+          currentMember={{
+            id: member.id,
+            role: member.role,
+            user: {
+              id: user.id,
+              name: user.name,
+              email: user.email,
+            },
           }}
-        >
-          <div className="flex items-center gap-md">
-            <div
-              className="avatar bg-accent"
-              style={{ width: "48px", height: "48px", fontSize: "1.25rem" }}
-            >
-              {server.name[0].toUpperCase()}
-            </div>
-            <div className="flex-1">
-              <h1 className="text-xl font-bold mb-0">{server.name}</h1>
-              <p className="text-sm text-secondary" style={{ margin: 0 }}>
-                {server.members.length} members
-                {server.isRestricted && " • Restricted"}
-              </p>
-            </div>
-            <Link href="/servers" className="btn btn-ghost">
-              Back to Servers
-            </Link>
-          </div>
-        </div>
-
-        {/* Chat Container (Messages + Input) */}
-        <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}>
-          <ChatContainer
-            serverId={serverId}
-            currentMember={{
-              id: member.id,
-              role: member.role,
-              user: {
-                id: user.id,
-                name: user.name,
-                email: user.email,
-              },
-            }}
-            isRestricted={server.isRestricted}
-          />
-        </div>
+          isRestricted={server.isRestricted}
+        />
       </div>
 
-      {/* Members Sidebar */}
-      <div
-        style={{
-          background: "var(--color-bg-secondary)",
-          height: "100%",
-          overflow: "hidden",
-          display: "flex",
-          flexDirection: "column",
-        }}
-      >
+      {/* Sidebar: Server Info + Members */}
+      <div className="chat-sidebar">
+        {/* Server Info Header */}
+        <div className="server-info-header">
+          <h1 className="server-info-title">{server.name}</h1>
+          <p className="server-info-meta">
+            {server.members.length} members
+            {server.isRestricted && " • Restricted"}
+          </p>
+          <Link href="/servers" className="back-button" style={{ marginTop: "var(--space-md)" }}>
+            ← Back
+          </Link>
+        </div>
+
+        {/* Members List */}
         <MembersList
           members={server.members}
           currentUserId={user.id}
