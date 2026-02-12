@@ -131,34 +131,20 @@ export default function MembersList({
     return (
       <div
         key={member.id}
-        style={{
-          background: isCurrentUser ? "var(--color-bg-tertiary)" : "transparent",
-          borderRadius: "var(--radius-md)",
-          marginBottom: "var(--space-xs)",
-          overflow: "hidden",
-        }}
+        className={`member-item ${isCurrentUser ? "is-current-user" : ""}`}
       >
         {/* Main Row: Avatar + Email + Chevron */}
         <div
-          className="flex items-center gap-sm p-sm"
-          style={{
-            cursor: hasActions ? "pointer" : "default",
-          }}
+          className={`member-row ${hasActions ? "clickable" : ""}`}
           onClick={hasActions ? toggleExpand : undefined}
         >
-          <div className="avatar avatar-sm bg-tertiary" style={{ flexShrink: 0 }}>
+          <div className="avatar avatar-sm bg-tertiary member-avatar">
             {member.user.email[0].toUpperCase()}
           </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
+          <div className="member-info">
             <p
-              className="text-sm font-medium"
-              style={{
-                margin: 0,
-                color: roleColor,
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-              }}
+              className="member-name"
+              style={{ color: roleColor }}
             >
               {member.user.email}
               {isCurrentUser && " (You)"}
@@ -167,16 +153,7 @@ export default function MembersList({
 
           {/* Chevron (only if has actions) */}
           {hasActions && (
-            <div
-              style={{
-                flexShrink: 0,
-                transition: "transform var(--transition-fast)",
-                transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)",
-                color: "var(--color-text-secondary)",
-                fontSize: "1.25rem",
-                lineHeight: 1,
-              }}
-            >
+            <div className={`member-chevron ${isExpanded ? "expanded" : ""}`}>
               ▼
             </div>
           )}
@@ -184,17 +161,10 @@ export default function MembersList({
 
         {/* Expandable Actions Row */}
         {hasActions && isExpanded && (
-          <div
-            className="flex items-center gap-sm p-sm"
-            style={{
-              paddingTop: 0,
-              paddingLeft: "calc(var(--space-sm) + 32px + var(--space-sm))", // Align with name
-              animation: "slideDown 0.2s ease-out",
-            }}
-          >
+          <div className="member-actions">
             {/* Role Management (Owner only) */}
             {canManageRole && (
-              <div style={{ flex: 1 }}>
+              <div className="flex-1">
                 {isUpdating ? (
                   <span className="text-xs text-secondary">Updating role...</span>
                 ) : (
@@ -204,16 +174,7 @@ export default function MembersList({
                       e.stopPropagation();
                       handleRoleChange(member.id, e.target.value as MemberRole);
                     }}
-                    className="text-xs"
-                    style={{
-                      width: "100%",
-                      padding: "var(--space-sm)",
-                      background: "var(--color-bg-input)",
-                      border: "1px solid var(--color-border)",
-                      borderRadius: "var(--radius-sm)",
-                      color: "var(--color-text-primary)",
-                      cursor: "pointer",
-                    }}
+                    className="member-role-select"
                   >
                     <option value="MODERATOR">Moderator</option>
                     <option value="GUEST">Guest</option>
@@ -230,17 +191,7 @@ export default function MembersList({
                   handleKickMember(member);
                 }}
                 disabled={isKicking || isUpdating}
-                className="text-xs"
-                style={{
-                  padding: "var(--space-sm) var(--space-md)",
-                  background: "var(--color-error)",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "var(--radius-sm)",
-                  cursor: isKicking ? "not-allowed" : "pointer",
-                  opacity: isKicking || isUpdating ? 0.5 : 1,
-                  whiteSpace: "nowrap",
-                }}
+                className="member-kick-btn"
               >
                 {isKicking ? "Kicking..." : "Kick Member"}
               </button>
@@ -252,13 +203,7 @@ export default function MembersList({
   };
 
   return (
-    <div
-      style={{
-        padding: "var(--space-lg)",
-        overflowY: "auto",
-        height: "100%",
-      }}
-    >
+    <div className="members-sidebar">
       <h3 className="text-lg font-bold mb-lg">Members ({members.length})</h3>
 
       {/* Owners */}

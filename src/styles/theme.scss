@@ -759,6 +759,100 @@ input[type="radio"] {
 
 .border { border: 1px solid var(--color-border); }
 .border-accent { border-color: var(--color-accent-blue); }
+.border-t { border-top: 1px solid var(--color-border); }
+.border-b { border-bottom: 1px solid var(--color-border); }
+.border-l { border-left: 1px solid var(--color-border); }
+.border-r { border-right: 1px solid var(--color-border); }
+
+// ----------------------------------------------------------------------------
+// 11a. HEIGHT & WIDTH UTILITIES
+// ----------------------------------------------------------------------------
+
+.h-full { height: 100%; }
+.h-screen { height: 100vh; }
+.min-h-0 { min-height: 0; }
+.w-full { width: 100%; }
+
+// ----------------------------------------------------------------------------
+// 11b. OVERFLOW UTILITIES
+// ----------------------------------------------------------------------------
+
+.overflow-hidden { overflow: hidden; }
+.overflow-auto { overflow: auto; }
+.overflow-y-auto { overflow-y: auto; }
+.overflow-x-hidden { overflow-x: hidden; }
+
+// ----------------------------------------------------------------------------
+// 11c. POSITION UTILITIES
+// ----------------------------------------------------------------------------
+
+.relative { position: relative; }
+.absolute { position: absolute; }
+.fixed { position: fixed; }
+.sticky { position: sticky; }
+
+.top-0 { top: 0; }
+.bottom-0 { bottom: 0; }
+.left-0 { left: 0; }
+.right-0 { right: 0; }
+.inset-0 { top: 0; right: 0; bottom: 0; left: 0; }
+
+// ----------------------------------------------------------------------------
+// 11d. Z-INDEX UTILITIES
+// ----------------------------------------------------------------------------
+
+.z-0 { z-index: 0; }
+.z-10 { z-index: 10; }
+.z-50 { z-index: 50; }
+.z-100 { z-index: 100; }
+.z-1000 { z-index: 1000; }
+
+// ----------------------------------------------------------------------------
+// 11e. DISPLAY & VISIBILITY
+// ----------------------------------------------------------------------------
+
+.block { display: block; }
+.inline-block { display: inline-block; }
+.hidden { display: none; }
+
+// ----------------------------------------------------------------------------
+// 11f. HOVER STATE UTILITIES
+// ----------------------------------------------------------------------------
+
+.hover\:bg-tertiary:hover { background-color: var(--color-bg-tertiary); }
+.hover\:bg-secondary:hover { background-color: var(--color-bg-secondary); }
+.hover\:text-accent:hover { color: var(--color-accent-blue); }
+.hover\:border-accent:hover { border-color: var(--color-accent-blue); }
+
+// ----------------------------------------------------------------------------
+// 11g. TRANSITION UTILITIES
+// ----------------------------------------------------------------------------
+
+.transition-all { transition: all var(--transition-base); }
+.transition-fast { transition: all var(--transition-fast); }
+.transition-colors { transition: color var(--transition-fast), background-color var(--transition-fast), border-color var(--transition-fast); }
+.transition-transform { transition: transform var(--transition-base); }
+
+// ----------------------------------------------------------------------------
+// 11h. TEXT UTILITIES (EXTENDED)
+// ----------------------------------------------------------------------------
+
+.word-break { word-break: break-word; }
+.whitespace-pre-wrap { white-space: pre-wrap; }
+.whitespace-nowrap { white-space: nowrap; }
+.text-ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+// ----------------------------------------------------------------------------
+// 11i. CURSOR UTILITIES
+// ----------------------------------------------------------------------------
+
+.cursor-pointer { cursor: pointer; }
+.cursor-default { cursor: default; }
+.cursor-not-allowed { cursor: not-allowed; }
 
 // ----------------------------------------------------------------------------
 // 12. COMPONENT PATTERNS
@@ -932,6 +1026,241 @@ input[type="radio"] {
     background: var(--color-bg-tertiary);
     border-radius: var(--radius-md);
   }
+}
+
+// Chat Container Pattern
+.chat-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.chat-messages {
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.chat-input-wrapper {
+  padding: var(--space-lg);
+  border-top: 1px solid var(--color-border);
+  background: var(--color-bg-secondary);
+  flex-shrink: 0;
+}
+
+// Message List Pattern
+.message-list-container {
+  height: 100%;
+  overflow-y: auto;
+  padding: var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.message-item {
+  display: flex;
+  gap: var(--space-md);
+  position: relative;
+  padding: var(--space-sm);
+  margin-left: calc(-1 * var(--space-sm));
+  margin-right: calc(-1 * var(--space-sm));
+  border-radius: var(--radius-md);
+  transition: background var(--transition-fast);
+
+  &:hover {
+    background: var(--color-bg-tertiary);
+  }
+}
+
+.message-avatar {
+  flex-shrink: 0;
+}
+
+.message-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.message-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-xs);
+}
+
+.message-author {
+  font-weight: var(--font-weight-semibold);
+}
+
+.message-timestamp {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+}
+
+.message-text {
+  color: var(--color-text-primary);
+  word-break: break-word;
+  white-space: pre-wrap;
+  margin: 0;
+}
+
+.message-delete-btn {
+  position: absolute;
+  right: var(--space-sm);
+  top: 50%;
+  transform: translateY(-50%);
+  padding: var(--space-xs) var(--space-sm);
+  background: var(--color-error);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: var(--shadow-sm);
+
+  &:hover {
+    background: #dc2626;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+// Members List Pattern
+.members-sidebar {
+  padding: var(--space-lg);
+  overflow-y: auto;
+  height: 100%;
+}
+
+.member-item {
+  background: transparent;
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-xs);
+  overflow: hidden;
+
+  &.is-current-user {
+    background: var(--color-bg-tertiary);
+  }
+}
+
+.member-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm);
+
+  &.clickable {
+    cursor: pointer;
+  }
+}
+
+.member-avatar {
+  flex-shrink: 0;
+}
+
+.member-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.member-name {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.member-chevron {
+  flex-shrink: 0;
+  transition: transform var(--transition-fast);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xl);
+  line-height: 1;
+
+  &.expanded {
+    transform: rotate(180deg);
+  }
+}
+
+.member-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm);
+  padding-top: 0;
+  padding-left: calc(var(--space-sm) + 32px + var(--space-sm)); // Align with name
+  animation: slideDown 0.2s ease-out;
+}
+
+.member-role-select {
+  flex: 1;
+  width: 100%;
+  padding: var(--space-sm);
+  background: var(--color-bg-input);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+}
+
+.member-kick-btn {
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-error);
+  color: white;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+  white-space: nowrap;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+// New Messages Popup
+.new-messages-popup {
+  position: absolute;
+  bottom: var(--space-lg);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: var(--space-sm) var(--space-lg);
+  background: var(--color-accent-blue);
+  color: white;
+  border: none;
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 10;
+}
+
+// Layout Body Pattern (for root layout)
+.layout-body {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.layout-main {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg-primary);
 }
 
 @keyframes fadeIn {

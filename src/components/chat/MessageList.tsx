@@ -305,39 +305,16 @@ export default function MessageList({
   };
 
   return (
-    <div style={{ position: "relative", height: "100%" }}>
-      <div
-        ref={scrollContainerRef}
-        style={{
-          height: "100%",
-          overflowY: "auto",
-          padding: "var(--space-lg)",
-          display: "flex",
-          flexDirection: "column",
-          gap: "var(--space-md)",
-        }}
-      >
+    <div className="relative h-full">
+      <div ref={scrollContainerRef} className="message-list-container">
       {/* Top indicator */}
       {!hasMoreMessages && messages.length > 0 && (
-        <div
-          style={{
-            textAlign: "center",
-            padding: "var(--space-md)",
-            color: "var(--color-text-tertiary)",
-            fontSize: "0.875rem",
-          }}
-        >
+        <div className="text-center p-md text-tertiary text-sm">
           You&apos;ve reached the top of this conversation
         </div>
       )}
       {loadingOlder && (
-        <div
-          style={{
-            textAlign: "center",
-            padding: "var(--space-md)",
-            color: "var(--color-text-secondary)",
-          }}
-        >
+        <div className="text-center p-md text-secondary">
           Loading older messages...
         </div>
       )}
@@ -366,33 +343,19 @@ export default function MessageList({
         return (
           <div
             key={message.id}
-            className="flex gap-md"
-            style={{
-              position: "relative",
-              padding: "var(--space-sm)",
-              marginLeft: "calc(-1 * var(--space-sm))",
-              marginRight: "calc(-1 * var(--space-sm))",
-              borderRadius: "var(--radius-md)",
-              transition: "background var(--transition-fast)",
-              background: hoveredMessageId === message.id
-                ? "var(--color-bg-tertiary)"
-                : "transparent",
-            }}
+            className="message-item"
             onMouseEnter={() => setHoveredMessageId(message.id)}
             onMouseLeave={() => setHoveredMessageId(null)}
           >
-            <div
-              className="avatar avatar-sm bg-tertiary"
-              style={{ flexShrink: 0 }}
-            >
+            <div className="avatar avatar-sm bg-tertiary message-avatar">
               {message.member.user.email[0].toUpperCase()}
             </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div className="flex items-center gap-sm mb-xs">
-                <span className="font-semibold" style={{ color: roleColor }}>
+            <div className="message-content">
+              <div className="message-header">
+                <span className="message-author" style={{ color: roleColor }}>
                   {message.member.user.email}
                 </span>
-                <span className="text-xs text-tertiary">
+                <span className="message-timestamp">
                   {new Date(message.sentAt).toLocaleTimeString([], {
                     hour: "2-digit",
                     minute: "2-digit",
@@ -401,8 +364,7 @@ export default function MessageList({
                 {/* Status indicator */}
                 {message.status === "PENDING" && (
                   <span
-                    className="text-xs"
-                    style={{ color: "var(--color-text-tertiary)" }}
+                    className="text-xs text-tertiary"
                     title="Sending..."
                   >
                     ⏳
@@ -410,8 +372,7 @@ export default function MessageList({
                 )}
                 {message.status === "SENT" && (
                   <span
-                    className="text-xs"
-                    style={{ color: "var(--color-accent-blue)" }}
+                    className="text-xs text-accent"
                     title="Sent"
                   >
                     ✓
@@ -420,22 +381,14 @@ export default function MessageList({
                 {message.status === "FAILED" && (
                   <button
                     onClick={() => onRetry(message)}
-                    className="text-xs underline"
-                    style={{ color: "var(--color-error)" }}
+                    className="text-xs underline text-error"
                     title={message.error || "Failed to send"}
                   >
                     ✗ Retry
                   </button>
                 )}
               </div>
-              <p
-                className="text-primary"
-                style={{
-                  wordBreak: "break-word",
-                  whiteSpace: "pre-wrap",
-                  margin: 0,
-                }}
-              >
+              <p className="message-text">
                 {message.content}
               </p>
             </div>
@@ -448,23 +401,7 @@ export default function MessageList({
                   handleDeleteMessage(message.id);
                 }}
                 disabled={isDeleting}
-                className="text-xs"
-                style={{
-                  position: "absolute",
-                  right: "var(--space-sm)",
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  padding: "var(--space-xs) var(--space-sm)",
-                  background: "var(--color-error)",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "var(--radius-sm)",
-                  cursor: isDeleting ? "not-allowed" : "pointer",
-                  opacity: isDeleting ? 0.5 : 1,
-                  fontWeight: "500",
-                  whiteSpace: "nowrap",
-                  boxShadow: "var(--shadow-sm)",
-                }}
+                className="message-delete-btn"
                 title="Delete message"
               >
                 {isDeleting ? "Deleting..." : "× Delete"}
@@ -480,22 +417,7 @@ export default function MessageList({
       {showNewMessagesPopup && unreadCount > 0 && (
         <button
           onClick={handleScrollToBottom}
-          style={{
-            position: "absolute",
-            bottom: "var(--space-lg)",
-            left: "50%",
-            transform: "translateX(-50%)",
-            padding: "var(--space-sm) var(--space-lg)",
-            background: "var(--color-accent-blue)",
-            color: "white",
-            border: "none",
-            borderRadius: "var(--radius-full)",
-            fontSize: "0.875rem",
-            fontWeight: "600",
-            cursor: "pointer",
-            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
-            zIndex: 10,
-          }}
+          className="new-messages-popup"
         >
           {unreadCount} new message{unreadCount > 1 ? "s" : ""} ↓
         </button>
