@@ -4,6 +4,8 @@ import { useState, useRef, useCallback } from "react";
 import { MemberRole } from "@prisma/client";
 import MessageList from "./MessageList";
 import MessageInput from "./MessageInput";
+import DebugConsole from "./DebugConsole";
+import { useDebug } from "@/contexts/DebugContext";
 
 export type MessageStatus = "PENDING" | "SENT" | "FAILED";
 
@@ -51,6 +53,7 @@ export default function ChatContainer({
   const [messages, setMessages] = useState<ClientMessage[]>([]);
   const [lastReadMessageId, setLastReadMessageId] = useState<string | null>(null);
   const messageSequenceRef = useRef(0);
+  const { isDebug, logAction } = useDebug();
 
   // Add optimistic message and sync in background
   const sendMessage = useCallback(
@@ -90,12 +93,22 @@ export default function ChatContainer({
           }),
         });
 
+        const data = await res.json();
+
         if (!res.ok) {
-          const data = await res.json();
+          // Log debug action for failed message
+          if (isDebug) {
+            logAction("POST", `/api/servers/${serverId}/messages`, res.status, data.error || "Failed to send message");
+          }
           throw new Error(data.error || "Failed to send message");
         }
 
-        const serverMessage = await res.json();
+        // Log debug action for successful message
+        if (isDebug) {
+          logAction("POST", `/api/servers/${serverId}/messages`, res.status, "Message sent");
+        }
+
+        const serverMessage = data;
 
         // Update to SENT
         setMessages((prev) =>
@@ -120,7 +133,7 @@ export default function ChatContainer({
         );
       }
     },
-    [serverId, currentMember]
+    [serverId, currentMember, isDebug, logAction]
   );
 
   // Retry failed message
@@ -209,6 +222,9 @@ export default function ChatContainer({
           onSendMessage={sendMessage}
         />
       </div>
+
+      {/* Debug Console - Only visible in debug mode */}
+      <DebugConsole />
     </div>
   );
 }

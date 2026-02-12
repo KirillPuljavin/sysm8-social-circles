@@ -4,6 +4,7 @@ import "@/styles/theme.scss";
 import Header from "@/components/Header";
 import ConditionalFooter from "@/components/ConditionalFooter";
 import AuthCleanupGuard from "@/components/auth/AuthCleanupGuard";
+import { DebugProvider } from "@/contexts/DebugContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -28,12 +29,14 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} layout-body`}>
-        <AuthCleanupGuard />
-        <Header />
-        <main className="layout-main">
-          {children}
-        </main>
-        <ConditionalFooter />
+        <DebugProvider>
+          <AuthCleanupGuard />
+          <Header />
+          <main className="layout-main">
+            {children}
+          </main>
+          <ConditionalFooter />
+        </DebugProvider>
       </body>
     </html>
   );
