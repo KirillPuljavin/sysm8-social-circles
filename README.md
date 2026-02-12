@@ -47,6 +47,8 @@ Projektet är uppbyggt för att maximera separation av ansvarsområden (Modulari
 - **`/src/app/api/servers`** - REST-endpoints för serverhantering (POST, GET, PATCH, DELETE)
 - **`/src/app/api/servers/[id]/members`** - Medlemshantering (lista, uppdatera roll, kicka)
 - **`/src/app/api/servers/[id]/messages`** - Meddelandehantering med cursor-baserad pagination
+- **`/src/app/api/user/export`** - GDPR data export (GET - returnerar all användardata som JSON)
+- **`/src/app/api/user/delete`** - GDPR kontoradering (DELETE - anonymiserar meddelanden, raderar konto)
 - **`/src/lib/rbac.ts`** - Centraliserad logik för rollbaserad åtkomstkontroll (9 funktioner)
 - **`/src/lib/auth.ts`** - Autentiseringslogik med JIT-sync mot databas
 - **`/src/lib/validations`** - Zod-scheman för strikt validering av all input
@@ -58,7 +60,9 @@ Projektet är uppbyggt för att maximera separation av ansvarsområden (Modulari
 - **`/src/app/servers/page.tsx`** - Serverlista med create/delete/invite-funktionalitet
 - **`/src/app/servers/[id]/page.tsx`** - Server-chatt med 2-kolumnslayout (meddelanden + medlemmar)
 - **`/src/app/invite/[code]/page.tsx`** - Automatisk serverinbjudan via delningslänk
+- **`/src/app/settings/page.tsx`** - Kontoinställningar med GDPR-funktioner (data export, kontoradering)
 - **`/src/components/chat`** - Chattkomponenter (MessageList, MessageInput, ChatContainer, MembersList)
+- **`/src/components/settings`** - GDPR-komponenter (GdprActions för export och radering)
 - **`/src/styles/theme.scss`** - Single-file SCSS-arkitektur (1021 rader, WCAG AAA-compliant)
 
 ### Konfiguration och infrastruktur
@@ -117,9 +121,11 @@ Hanteras via Azure Static Web Apps inbyggda identitetshantering (Google OAuth). 
 
 Denna matris implementeras genom funktioner som `canKickMember`, `canDeleteMessage`, och `canEditServer` vilka validerar både den agerade användarens roll och målresursens ägare innan operation tillåts.
 
-### Data Minimization
+### Data Minimization och GDPR-Compliance
 
-Endast nödvändig persondata lagras (`email`, `azureId`, `name`). Inga känsliga attribut som IP-adresser, location data eller device fingerprints sparas. Databasschemat följer GDPR-principen om dataminimering och inkluderar cascade delete som automatiskt raderar all användardata vid konto radering.
+Endast nödvändig persondata lagras (`email`, `azureId`, `name`). Inga känsliga attribut som IP-adresser, location data eller device fingerprints sparas. Databasschemat följer GDPR-principen om dataminimering.
+
+Vid kontoradering anonymiseras användarens meddelanden istället för att raderas, vilket bevarar konversationshistorik för andra medlemmar samtidigt som personuppgifter tas bort. Raderade användare visas som "[Deleted User]" i användargränssnittet. Användarens servrar, medlemskap och personuppgifter raderas helt via cascade delete.
 
 ### Skydd mot attacker
 
@@ -180,7 +186,11 @@ Application Insights är aktiverat i Azure-miljön för produktionsövervakning 
 
 ## GDPR och Dataskydd
 
-Databasen implementerar dataminimering enligt GDPR-principer genom att endast lagra nödvändig information (email, namn, användarskapat innehåll). Cascade delete säkerställer automatisk radering av all användardata vid kontoradering. Samtyckesgränssnitt och data export-funktionalitet är inte implementerat i användargränssnittet utan hanteras manuellt vid behov.
+Användare kan exportera all sin persondata via inställningssidan (`/settings`), vilket genererar en JSON-fil med profil, medlemskap, ägda servrar och meddelanden. Detta uppfyller GDPR:s krav på dataportabilitet och rätten till åtkomst.
+
+Kontoradering sker via samma inställningssida och raderar användarens profil samt alla personuppgifter. Istället för att radera meddelanden helt, vilket skulle förstöra konversationshistoriken för andra medlemmar, anonymiseras de genom att ta bort länken till användarkontot. Anonymiserade meddelanden visas som "[Deleted User]" i gränssnittet, vilket följer samma mönster som Discord och Reddit använder för att balansera GDPR-compliance med användbarhet.
+
+Om användaren äger servrar raderas dessa helt med cascade delete av alla medlemmar och meddelanden i de servrarna, vilket säkerställer att ingen persondata kvarstår.
 
 ## Reflektion och Lärandemål
 
