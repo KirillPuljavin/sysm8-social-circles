@@ -85,11 +85,13 @@ export async function PATCH(
         sequence: updatedMessage.sequence,
         status: updatedMessage.status,
         serverId: updatedMessage.serverId,
-        member: {
-          id: updatedMessage.member.id,
-          role: updatedMessage.member.role,
-          user: updatedMessage.member.user,
-        },
+        member: updatedMessage.member
+          ? {
+              id: updatedMessage.member.id,
+              role: updatedMessage.member.role,
+              user: updatedMessage.member.user,
+            }
+          : null,
         createdAt: updatedMessage.createdAt.toISOString(),
       },
     });

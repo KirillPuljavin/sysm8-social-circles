@@ -20,6 +20,7 @@ export async function canEditMessage(
 
   if (!message) return false;
   if (message.serverId !== serverId) return false;
+  if (!message.member) return false; // Deleted user cannot edit
 
   // Only author can edit their own message
   return message.member.userId === userId;

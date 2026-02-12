@@ -125,6 +125,7 @@ export async function canDeleteMessage(
 
   if (!actor || !message) return false;
   if (message.serverId !== serverId) return false; // Message not in this server
+  if (!message.member) return false; // Deleted user messages cannot be deleted
 
   // Rule 1: Anyone can delete their own messages
   if (message.member.userId === actorId) return true;
