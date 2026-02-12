@@ -242,11 +242,11 @@ export default function MessageList({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [serverId]);
 
-  // Auto-refresh every 3 seconds
+  // Auto-refresh every 2 seconds
   useEffect(() => {
     const interval = setInterval(() => {
       void fetchMessages();
-    }, 3000);
+    }, 2000);
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [serverId]);

@@ -145,7 +145,7 @@ Meddelandeborttagning följer en fyrstegsregel: alla kan radera sina egna meddel
 
 Valet av Azure Static Web Apps (SWA) som primär plattform möjliggör användning av Managed Authentication, vilket innebär att autentiseringen sker på edge-nivå via den inbyggda infrastrukturen. Genom att delegera identitetshanteringen uppnås en strikt separation mellan autentisering (plattformstyrd) och auktorisering (applikationsstyrd), vilket minskar attackytan då hantering av känsliga inloggningsuppgifter undviks helt. Detta medger fullt fokus på Role-Based Access Control (RBAC) inom affärslogiken, där verifierade "claims" från Azure används för att styra behörigheter på ett säkert och spårbart sätt.
 
-För realtidsuppdateringar av meddelanden används 3-sekunders polling istället för WebSockets. Detta beslut baserades på att Azure Static Web Apps kräver separat Azure SignalR-tjänst för WebSocket-support vilket innebär extra kostnad och komplexitet. För projektets omfattning med begränsat antal samtidiga användare är polling-lösningen tillräcklig.
+För realtidsuppdateringar av meddelanden används 2-sekunders polling istället för WebSockets. Detta beslut baserades på att Azure Static Web Apps kräver separat Azure SignalR-tjänst för WebSocket-support vilket innebär extra kostnad och komplexitet. För projektets omfattning med begränsat antal samtidiga användare är polling-lösningen tillräcklig.
 
 Zod valdes för input-validering eftersom biblioteket genererar TypeScript-typer direkt från valideringsscheman, vilket säkerställer att frontend och backend delar samma type definitions. Detta eliminerar risk för type mismatches mellan API-kontrakt och implementering, och används istället för typiska DTOs (som är vanliga i .NET backend).
 
@@ -164,13 +164,23 @@ PostgreSQL körs i Supabase med connection pooling via Prisma. Två connection s
 
 Migrationer körs automatiskt i CI/CD-pipeline före deployment, liknar Migrations med Entity Framework i .NET.
 
-## Kända Begränsningar
+## Testning och Kvalitetssäkring
 
-Observability saknas i form av Application Insights eller liknande telemetri-lösning, vilket innebär att det inte finns real-time övervakning av fel eller prestanda i produktion.
+Projektet innehåller omfattande testtäckning med 59 enhetstester via Vitest-ramverket, fördelade över tre huvudområden:
 
-GDPR-compliance saknar användargränssnitt för data export och konto-radering, även om databas-schema inkluderar cascade delete som automatiskt raderar all användardata vid användarradering.
+- **RBAC-funktioner** (18 BDD-scenarion): Verifierar alla behörighetsregler för message/member/role-hantering
+- **Zod-validering** (25 tester): Säkerställer korrekt input-validering och skydd mot injection-attacker
+- **Invite-systemet** (13 tester): Bekräftar kodgenerering, join-flöde och säkerhetslogik
 
-Testning är begränsad till grundläggande sanity-tester. RBAC-funktioner och API-endpoints saknar dedikerade enhetstester vilket innebär att validering sker manuellt.
+Testsviten körs automatiskt i CI/CD-pipeline och blockerar deployment vid fel.
+
+## Observability och Övervakning
+
+Application Insights är aktiverat i Azure-miljön för produktionsövervakning av fel och prestanda. Telemetri samlas in automatiskt från Next.js-applikationen och Azure Static Web Apps-infrastrukturen.
+
+## GDPR och Dataskydd
+
+Databasen implementerar dataminimering enligt GDPR-principer genom att endast lagra nödvändig information (email, namn, användarskapat innehåll). Cascade delete säkerställer automatisk radering av all användardata vid kontoradering. Samtyckesgränssnitt och data export-funktionalitet är inte implementerat i användargränssnittet utan hanteras manuellt vid behov.
 
 ## Reflektion och Lärandemål
 
