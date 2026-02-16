@@ -172,7 +172,7 @@ Projektet innehåller omfattande testtäckning med 59 enhetstester via Vitest-ra
 
 Testsviten körs automatiskt i CI/CD-pipeline och blockerar deployment vid fel.
 
-## Övervakning
+### Övervakning
 
 Application Insights är aktiverat i Azure-miljön för produktionsövervakning av fel och prestanda. Telemetri samlas in automatiskt från Next.js-applikationen och Azure Static Web Apps-infrastrukturen.
 
