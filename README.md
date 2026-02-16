@@ -177,34 +177,6 @@ Kontoradering sker via samma inställningssida och raderar användarens profil s
 
 Om användaren äger servrar raderas dessa helt med cascade delete av alla medlemmar och meddelanden i de servrarna, vilket säkerställer att ingen persondata kvarstår.
 
-## Användarscenarier
-
-Ett typiskt flöde börjar med att en användare skapar en server genom att ange namn och välja om servern ska vara restricted (vilket begränsar gästers möjlighet att posta). Systemet genererar en unik inbjudningskod och användaren kan dela länken med andra anvöndare. När en mottagare klickar på länken autentiseras de via Google OAuth om de inte redan är inloggade, och läggs automatiskt till som Guest i servern.
-
-Owner kan sedan promote utvalda medlemmar till Moderator-rollen, vilket ger dem rätt att moderera innehåll från gäster. Om en gäst bryter mot regler kan Moderator eller Owner kicka medlemmen, vilket tar bort deras åtkomst till servern. Meddelanden som redan postats bevaras även efter att en medlem kickats.
-
-Meddelandeborttagning följer en fyrstegsregel: alla kan radera sina egna meddelanden, Moderator och Owner kan radera gäst-meddelanden, Moderator och Owner kan radera andra moderatorers meddelanden, men endast Owner kan radera Owner-meddelanden. Denna matris implementeras både i backend-validering och frontend-UI där raderingsknappar endast visas om användaren har behörighet.
-
-## Beslut I Arkitekturen
-
-Azure var given som krav, men inom det hade vi val att göra. Static Web Apps med Next.js i Hybrid Mode kändes rätt eftersom det löser autentiseringen åt mig. Istället för att bygga OAuth-flows själv tar Azure hand om det på edge-nivå och ger mig en header med användardata. Det betyder att jag kan fokusera på RBAC-logiken (alltså vem som får göra vad) istället för att tampas med token-refresh och session management. Autentisering blir infrastrukturens problem, auktorisering blir min kod.
-
-Det blev en monolitisk app istället för separation mellan frontend och backend. Next.js API-routes kör som serverless functions i samma deployment som frontend-koden. I en traditionell setup hade jag byggt en .NET Web API som egen tjänst och pekat React mot den, men här är allt i en enhet. Det förenklar deployment och minskar antalet rörliga delar, men innebär också att APIM måste konfigureras som reverse proxy framför hela appen istället för att länka direkt till en backend-tjänst.
-
-För realtidsuppdatering av meddelanden går appen ut och hämtar nya meddelanden var 2:a sekund. Det är inte WebSockets, och det var ett medvetet val. Azure SWA stöder inte WebSockets utan att dra in Azure SignalR som separat tjänst, vilket betyder mer config, mer kostnad, och mer komplexitet. För en chattapp med några samtidiga användare räcker polling. Det är inte elegant, men det fungerar och håller stacken enkel.
-
-Zod för validering var egentligen inte bara ett val för validering. Det var ett val för type safety. Zod-scheman genererar TypeScript-typer automatiskt, vilket betyder att frontend och backend delar exakt samma förståelse för vad som är giltig data. Om jag ändrar ett schema uppdateras typerna överallt, och kompilatorn säger till om något inte stämmer. Det kändes mer robust än att ha separata DTO-klasser som kan drifta isär.
-
-All styling lever i en enda fil (`theme.scss`) istället för att spridas över komponentmoduler eller Tailwind. Det var ett pragmatiskt val. Med den korta tiden jag hade, fanns inget utrymme att bygga komponent-level CSS-arkitektur. En fil med utilities och komponentmönster var snabbare att scaffolda och hålla konsistent. Det offrar komponentinkapsling och skapar risk för namnkonflikter i större skala, men för ett kursprojekt (1021 rader CSS) fungerade det. Bättre att leverera med global styling än att spendera tid på modularisering som projektet inte behövde.
-
-RBAC-funktionerna är rena funktioner som tar ID:n och returnerar en boolean. Inga klasser, ingen state, bara `canUserDoThis(userId, resourceId)`. Det gör dem lätta att testa och lätta att förstå. Permissions-matrisen lever i kod, inte i en databas-tabell, vilket betyder att logiken är synlig och versionshanterad. Om permissions behöver bli mer dynamiska i framtiden måste designen ändras, men för detta projekts scope fungerar det.
-
-Säkerheten byggdes i lager. Rate limiting på infrastrukturnivå stoppar flood innan det når koden. Headers blockerar XSS och clickjacking på protokollnivå. Prisma förhindrar SQL-injection genom prepared statements. Zod validerar input. RBAC kollar permissions. Inget lager är perfekt, men tillsammans täcker de det mesta. Tanken var att inte lita på en enskild mekanism, utan bygga redundans.
-
-Största utmaningen för mig var att få Next.js middleware att sluta skapa redirect-loops med Azure SWA:s auth i början. Lösningen blev att ta bort middleware helt och låta Azure hantera routing-skydd via `staticwebapp.config.json`. Det är Azure:s rekommenderade mönster, men det tog ett tag att inse.
-
-Projektet är inte perfekt. Polling istället för WebSockets är inte optimal. SCSS blev en monolitisk fil. APIM-config är applicerad manuellt till Azure Portalen i nuläget, där taknken var att automatisera och synca via pipeline. Men det fungerar, det är säkert, det är testat, och det deployar stabilt. För ett kursprojekt som ska visa att man förstår DevOps, säkerhet och molndrift känns det tillräckligt.
-
 ## Drift & Miljö
 
 #### Produktionsmiljö
@@ -234,6 +206,42 @@ Testsviten körs automatiskt i CI/CD-pipeline och blockerar deployment vid fel.
 #### Övervakning
 
 Application Insights är aktiverat i Azure-miljön för produktionsövervakning av fel och prestanda. Telemetri samlas in automatiskt från Next.js-applikationen och Azure Static Web Apps-infrastrukturen.
+
+## Användarscenarier
+
+En ny användare landar på startsidan och möts av en marknadsföringssida som beskriver plattformen. Om användaren inte är inloggad visas en login-knapp som triggar Google OAuth via Azure SWA. Efter inloggning omdirigeras användaren till serverlistan, som initialt är tom.
+
+Användaren skapar sin första server genom att klicka "Create Server" och fyller i ett namn. Under skapandet kan användaren välja om servern ska vara "restricted", vilket innebär att endast Owner och Moderator kan posta meddelanden (gäster kan bara läsa). När servern skapas genereras automatiskt en unik invite-kod och användaren får en delbar länk.
+
+För att bjuda in andra kopierar användaren invite-länken och skickar den via valfri kanal. När mottagaren klickar på länken autentiseras de med Google OAuth (om de inte redan är inloggade) och läggs automatiskt till som Guest i servern. De omdirigeras direkt till server-chatten.
+
+I chattvyn ser användaren en tvåkolumnslayout: meddelanden till vänster, medlemslista till höger. Meddelanden uppdateras automatiskt var 2:a sekund via polling. Användarnamn färgkodas efter roll (Owner guld, Moderator blå, Guest grå). När användaren håller musen över egna meddelanden visas edit- och delete-knappar. Edit öppnar en inline-redigeringsvy där meddelandet kan ändras och sparas.
+
+Owner kan hantera medlemmar via sidopanelen. Varje medlem har en expanderbar rad som visar användarinfo. För Guest-medlemmar visas en role-dropdown där Owner kan promota till Moderator. Owner kan också kicka medlemmar, förutom sig själv. Moderator kan kicka Guests men inte andra Moderatorer eller Owner.
+
+Meddelandeborttagning följer RBAC-matrisen: alla kan radera sina egna meddelanden, Moderator och Owner kan radera Guests meddelanden, Moderator och Owner kan radera andra Moderators meddelanden, men endast Owner kan radera Owners meddelanden. Delete-knappar visas endast när användaren har behörighet.
+
+I inställningar (`/settings`) kan användaren se sin profil, antal ägda servrar och medlemskap. Under GDPR-sektionen finns två funktioner: "Export Data" som genererar en nedladdningsbar JSON-fil med all användardata (profil, medlemskap, meddelanden), och "Delete Account" som kräver tvåstegsbekräftelse och raderar kontot permanent. Vid radering anonymiseras användarens meddelanden (visas som "[Deleted User]") för att bevara konversationshistorik, medan användarens egna servrar raderas helt med cascade.
+
+## Beslut I Arkitekturen
+
+Azure var given som krav, men inom det hade vi val att göra. Static Web Apps med Next.js i Hybrid Mode kändes rätt eftersom det löser autentiseringen åt mig. Istället för att bygga OAuth-flows själv tar Azure hand om det på edge-nivå och ger mig en header med användardata. Det betyder att jag kan fokusera på RBAC-logiken (alltså vem som får göra vad) istället för att tampas med token-refresh och session management. Autentisering blir infrastrukturens problem, auktorisering blir min kod.
+
+Det blev en monolitisk app istället för separation mellan frontend och backend. Next.js API-routes kör som serverless functions i samma deployment som frontend-koden. I en traditionell setup hade jag byggt en .NET Web API som egen tjänst och pekat React mot den, men här är allt i en enhet. Det förenklar deployment och minskar antalet rörliga delar, men innebär också att APIM måste konfigureras som reverse proxy framför hela appen istället för att länka direkt till en backend-tjänst.
+
+För realtidsuppdatering av meddelanden går appen ut och hämtar nya meddelanden var 2:a sekund. Det är inte WebSockets, och det var ett medvetet val. Azure SWA stöder inte WebSockets utan att dra in Azure SignalR som separat tjänst, vilket betyder mer config, mer kostnad, och mer komplexitet. För en chattapp med några samtidiga användare räcker polling. Det är inte elegant, men det fungerar och håller stacken enkel.
+
+Zod för validering var egentligen inte bara ett val för validering. Det var ett val för type safety. Zod-scheman genererar TypeScript-typer automatiskt, vilket betyder att frontend och backend delar exakt samma förståelse för vad som är giltig data. Om jag ändrar ett schema uppdateras typerna överallt, och kompilatorn säger till om något inte stämmer. Det kändes mer robust än att ha separata DTO-klasser som kan drifta isär.
+
+All styling lever i en enda fil (`theme.scss`) istället för att spridas över komponentmoduler eller Tailwind. Det var ett pragmatiskt val. Med den korta tiden jag hade, fanns inget utrymme att bygga komponent-level CSS-arkitektur. En fil med utilities och komponentmönster var snabbare att scaffolda och hålla konsistent. Det offrar komponentinkapsling och skapar risk för namnkonflikter i större skala, men för ett kursprojekt (1021 rader CSS) fungerade det. Bättre att leverera med global styling än att spendera tid på modularisering som projektet inte behövde.
+
+RBAC-funktionerna är rena funktioner som tar ID:n och returnerar en boolean. Inga klasser, ingen state, bara `canUserDoThis(userId, resourceId)`. Det gör dem lätta att testa och lätta att förstå. Permissions-matrisen lever i kod, inte i en databas-tabell, vilket betyder att logiken är synlig och versionshanterad. Om permissions behöver bli mer dynamiska i framtiden måste designen ändras, men för detta projekts scope fungerar det.
+
+Säkerheten byggdes i lager. Rate limiting på infrastrukturnivå stoppar flood innan det når koden. Headers blockerar XSS och clickjacking på protokollnivå. Prisma förhindrar SQL-injection genom prepared statements. Zod validerar input. RBAC kollar permissions. Inget lager är perfekt, men tillsammans täcker de det mesta. Tanken var att inte lita på en enskild mekanism, utan bygga redundans.
+
+Största utmaningen för mig var att få Next.js middleware att sluta skapa redirect-loops med Azure SWA:s auth i början. Lösningen blev att ta bort middleware helt och låta Azure hantera routing-skydd via `staticwebapp.config.json`. Det är Azure:s rekommenderade mönster, men det tog ett tag att inse.
+
+Projektet är inte perfekt. Polling istället för WebSockets är inte optimal. SCSS blev en monolitisk fil. APIM-config är applicerad manuellt till Azure Portalen i nuläget, där taknken var att automatisera och synca via pipeline. Men det fungerar, det är säkert, det är testat, och det deployar stabilt. För ett kursprojekt som ska visa att man förstår DevOps, säkerhet och molndrift känns det tillräckligt.
 
 ## Reflektion och Lärandemål
 
