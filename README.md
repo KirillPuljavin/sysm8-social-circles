@@ -16,9 +16,17 @@ Uppgiftskraven specificerar "circles" som användargrupper. I denna implementati
 
 ## Teknisk Stack
 
-Applikationen är byggd med Next.js 16 (App Router) och TypeScript, med Prisma ORM som databas-abstraktion mot PostgreSQL i Supabase. Autentisering hanteras av Azure Static Web Apps inbyggda identitetslager med Google OAuth, vilket eliminerar behovet av dedikerad autentiseringsmiddleware. Styling genomförs med SCSS Modules, och all input valideras med Zod-scheman både på klient och server nivå.
+Next.js 16 med App Router valdes som ramverk eftersom projektet kräver både dynamiskt innehåll (chat, medlemslistor) och API-endpoints i samma applikation. App Router möjliggör server-side rendering för bättre SEO och initial load, samtidigt som React-komponenter hanterar interaktivitet på klienten. Detta eliminerar behovet av separat backend-server. API-routes körs som serverless functions direkt i Next.js, vilket förenklar deployment och minskar infrastrukturkomplexitet.
 
-Projektet är driftsatt på Azure Static Web Apps i Hybrid Mode, vilket kombinerar statisk webbhosting med server-side rendering och API-routes. CI/CD-pipelinen är implementerad via GitHub Actions med OIDC-autentisering, vilket innebär att inga långlivade secrets lagras i repot.
+TypeScript används för att fånga typ-fel vid kompilering istället för runtime. När en funktion förväntar sig en `userId: string` och få `undefined` upptäcks det direkt i editorn, inte när en användare triggar buggen i produktion. TypeScript fungerar också som levande dokumentation: funktionssignaturer visar exakt vilka parametrar som krävs och vad som returneras.
+
+Prisma ORM valdes för databas-access mot PostgreSQL i Supabase eftersom det kombinerar type-safety med migrations. Prisma genererar TypeScript-typer direkt från databasschemat, vilket innebär att om `User`-tabellen har ett `email`-fält kan koden inte kompilera om den försöker läsa `user.emal` (typo). Migrationer hanteras deklarativt: man definierar önskat schema och Prisma genererar SQL-migrations automatiskt, vilket liknar Entity Framework i .NET-världen. Prepared statements är inbyggt, vilket förhindrar SQL-injection utan extra kod.
+
+Styling implementerades i en enda global SCSS-fil (`src/styles/theme.scss`) istället för component-level CSS modules eller Tailwind. Filen innehåller design tokens, komponentmönster och utilities i ett enda källdokument. Detta var ett medvetet val för snabb implementation under projektdeadline. Att bygga en modular CSS-arkitektur med separata filer per komponent tar tid som projektet inte hade. Snabbare utveckling och garanterad visuell konsistens vägdes mot att man förlorar component encapsulation och risker för namnkonflikter om projektet växer. För kursprojektets scope (1021 rader SCSS) fungerade single-file-approach bra.
+
+Zod valdes för input-validering eftersom biblioteket genererar TypeScript-typer direkt från valideringsscheman. Istället för att definiera typer separat och sedan skriva validering manuellt (som riskerar drift mellan dem), definieras ett Zod-schema och både runtime-validering och compile-time-typer följer automatiskt. Detta säkerställer att frontend och backend delar exakt samma förståelse för vad som är giltig input.
+
+Azure Static Web Apps i Hybrid Mode används som deployment-plattform enligt kurskrav. Plattformen erbjuder managed authentication där Google OAuth hanteras på edge-nivå utan att applikationskoden behöver hantera OAuth-flows, automatisk TLS, global CDN, och stöd för både statiska filer och serverless API-routes. Hybrid Mode innebär att statiska assets (JS, CSS, bilder) serveras från CDN medan dynamiska requests (API-calls, SSR) går till serverless Node.js-runtime. Utöver kravet på Azure-deployment valdes Static Web Apps specifikt för dess inbyggda autentiseringslager, vilket förenklar identity management jämfört med att själv implementera OAuth-flows. CI/CD sker via GitHub Actions med OIDC-autentisering, vilket eliminerar behovet av statiska deployment-tokens som kan läcka.
 
 ## Navigation
 
@@ -83,11 +91,35 @@ Om något steg misslyckas blockeras merge och deployment automatiskt.
 
 ### API Management
 
-Azure API Management fungerar som reverse proxy framför Static Web App, vilket möjliggör infrastruktur-nivå säkerhet. APIM applicerar rate limiting baserat på IP-adress (15 anrop per 60 sekunder) innan trafik når Next.js-applikationen. Detta skyddar mot DoS/Flood-attacker och exponerar `x-rate-limit-remaining` header för klienter. Eftersom Azure SWA i Next.js Hybrid Mode inte stöder backend linking konfigureras APIM som front-proxy istället, vilket är enterprise-standard mönster för API gateway-krav.
+Kursbedömningen kräver Azure API Management (APIM) framför applikationen. Hur APIM konfigureras beror på backend-arkitekturen, vilket skiljer sig fundamentalt från traditionell frontend-backend-separation.
+
+**Traditionell separation:** Frontend (React som statiska filer) deployad separat från backend (.NET Web API som egen tjänst). I denna modell kan APIM konfigureras med "backend linking" där APIM pekar direkt på backend-tjänstens URL och routar trafik dit.
+
+**Vår arkitektur:** Next.js i Azure Static Web Apps Hybrid Mode innebär att frontend OCH backend-logik deployad som en enda enhet. API-routes (`/api/*`) körs inte som en separat server utan som serverless functions inom SWA-miljön. Detta är en monolitisk deployment som kombinerar statiska assets och dynamiska endpoints.
+
+Eftersom SWA Hybrid Mode inte exponerar en separat backend-URL att länka till, måste APIM konfigureras som **reverse proxy**. En reverse proxy är en mellanhand som tar emot klientens request, applicerar policies (rate limiting, säkerhet), och vidarebefordrar requesten till backend-tjänsten som om proxyn vore en vanlig klient. Reverse proxy-mönstret används när man vill lägga ett skyddslager framför en applikation utan att applikationen själv behöver implementera dessa skydd.
+
+I vår konfiguration:
+
+1. Klient skickar request → APIM (publik endpoint)
+2. APIM applicerar IP-baserad throttling (15 anrop per 60 sekunder)
+3. Om rate limit inte överskrids, vidarebefordras request → Azure SWA
+4. SWA processar request (antingen statisk fil eller serverless function)
+5. Response går tillbaka genom APIM → klient
+
+Detta skyddar mot DoS/Flood-attacker på infrastrukturnivå innan trafik når Next.js-applikationen. APIM exponerar `x-rate-limit-remaining` header så att klienter kan se hur många requests de har kvar. Policyn är definierad i XML-format (`/infra/apim/rate-limit-policy.xml`) och deployad manuellt via Azure Portal eftersom SWA inte stöder automatisk APIM-konfiguration via pipeline.
 
 ### Säkerhetsautentisering i CI/CD
 
-OIDC (OpenID Connect) används för autentisering mellan GitHub Actions och Azure. Istället för att lagra statiska API-tokens i repository genererar GitHub dynamiska ID-tokens som löper ut efter fem minuter. Detta eliminerar risken för läckta credentials och följer zero-trust principer.
+OpenID Connect (OIDC) är ett identitetsfederations-protokoll som möjliggör att en tjänst kan bevisa sin identitet för en annan tjänst utan att dela långlivade secrets. Fundamentalt fungerar det genom att GitHub och Azure delar en förtroendekedja baserad på kryptografiska signaturer istället för statiska lösenord.
+
+När CI/CD-pipelinen körs genererar GitHub Actions en JWT (JSON Web Token) som innehåller metadata om workflow-körningen: vilket repository som kör jobbet, vilken branch, och vilken commit. Denna token signeras kryptografiskt med GitHubs privata nyckel. Azure har i förväg konfigurerats att lita på GitHubs publika nyckel och kan därmed verifiera att token verkligen kommer från GitHub och inte har manipulerats.
+
+Azure validerar sedan claims i token mot förkonfigurerade regler: "Tillåt endast tokens från repository `KirillPuljavin/sysm8-social-circles` på branch `main`". Om validering lyckas utfärdar Azure ett tillfälligt access token som ger deployment-behörighet i exakt 5 minuter, precis tillräckligt länge för att slutföra deployment-operationen.
+
+Detta innebär att inga långlivade credentials behöver lagras i GitHub repository eller GitHub Secrets. Även om någon komprometterar repository-innehållet finns ingen token att stjäla. Angriparen skulle behöva äga både GitHubs signeringsnyckel (omöjligt) och köra från rätt repository och branch (blockerat av claims-validering) för att få deployment-åtkomst.
+
+Valet av OIDC gjordes för att eliminera det största säkerhetsproblemet med klassisk CI/CD: statiska deployment-tokens som läcker i commits, logs eller komprometterade GitHub Actions secrets. Med OIDC är varje deployment-session unikt autentiserad med kort-livade credentials, vilket följer principen om least privilege och just-in-time access.
 
 ### Autentisering I Appen
 
@@ -121,19 +153,25 @@ Vid kontoradering anonymiseras användarens meddelanden istället för att rader
 
 ### Skydd mot attacker
 
-**Input Sanering:** All användarinput valideras med Zod-scheman både på klient och server. SQL-injection förhindras via Prisma ORM:s prepared statements.
+Säkerhetsarkitekturen bygger på principen om defense-in-depth, där varje attackvektor möts av specifika försvar som fungerar både på infrastruktur- och applikationsnivå.
 
-**XSS-skydd:** Content Security Policy blockerar inline scripts förutom Next.js hydration. React escape:ar automatiskt alla användarinputs i JSX.
+Input-validering är den första barriären. Varje gång användaren skickar data valideras den med Zod-scheman både i webbläsaren (för omedelbar feedback) och på servern (för säkerhet). Schemana definierar exakta regler för längd, tecken och obligatoriska fält. Om valideringen misslyckas får användaren ett konkret felmeddelande som förklarar vad som är fel, istället för att applikationen kraschar eller accepterar ogiltig data. Detta skyddar mot både oavsiktliga fel och avsiktliga manipulationsförsök.
 
-**Clickjacking:** X-Frame-Options: DENY förhindrar att sidan embedds i Iframes.
+SQL-injection förhindras genom att Prisma ORM används för all databasaccess. Istället för att konkatenera användarinput direkt in i SQL-frågor (den klassiska sårbarheten) använder Prisma prepared statements där parametrar hanteras separat från frågestrukturen. Även om någon försöker injicera SQL-kod via ett textfält tolkas det alltid som data och aldrig som körbar kod.
 
-**CSRF:** Azure SWA hanterar CSRF-tokens automatiskt via SameSite cookies (samma domän där appen är i produktion).
+XSS-attacker (Cross-Site Scripting) blockeras genom en kombination av Content Security Policy och Reacts inbyggda escaping. CSP-headern konfigurerad i `staticwebapp.config.json` instruerar webbläsaren att endast köra scripts från samma domän, vilket blockerar extern skadlig kod. React hanterar dessutom automatisk escaping av all användarinput i komponenter. Om någon försöker posta `<script>alert('xss')</script>` i chatten renderas det som text istället för att köras som kod.
 
-**Rate Limiting:** Implementerat via Azure API Management som agerar reverse proxy framför applikationen. IP-baserad throttling (15 anrop per 60 sekunder) skyddar mot flood-attacker på infrastrukturnivå innan trafik når Next.js. Policy definierad i `/infra/apim/rate-limit-policy.xml`.
+Clickjacking-attacker, där angripare lägger en osynlig iframe över legitima knappar för att lura användare, förhindras med `X-Frame-Options: DENY`. Headern säger åt webbläsaren att aldrig tillåta sidan visas i en iframe, vilket eliminerar attackytan helt.
+
+CSRF-skydd (Cross-Site Request Forgery) hanteras automatiskt av Azure Static Web Apps genom SameSite-cookies. Autentiseringscookies skickas endast med requests från samma domän som applikationen körs på. Om en angripare försöker lura en användare att skicka en request från en annan webbplats skickas inte cookien med, och requesten avvisas som oautentiserad.
+
+Rate limiting implementeras på infrastrukturnivå genom Azure API Management som fungerar som reverse proxy framför applikationen. APIM spårar varje IP-adress och tillåter max 15 anrop per 60 sekunder. Flood-attacker stoppas innan de når Next.js-applikationen, vilket skyddar både applikationslogik och databas från överbelastning. Policyn är definierad i `/infra/apim/rate-limit-policy.xml` och exponerar en `x-rate-limit-remaining` header så att legitima klienter kan se hur många requests de har kvar innan throttling aktiveras.
+
+Tillsammans bildar dessa skydd en försvarslinje där ingen enskild mekanism är kritisk. Säkerheten byggs istället upp genom att kombinera flera oberoende lager som täcker olika attackvektorer. Från infrastruktur (rate limiting, headers) via ramverk (React escaping, Prisma prepared statements) till applikationslogik (Zod-validering, RBAC).
 
 ### Användarens Data Hantering
 
-Användare kan exportera all sin persondata via inställningssidan (`/settings`), vilket genererar en JSON-fil med profil, medlemskap, ägda servrar och meddelanden. Detta uppfyller GDPR:s krav på dataportabilitet och rätten till åtkomst.
+Användare kan exportera all sin persondata via inställningssidan (`/settings`), vilket genererar en JSON-fil med profil, medlemskap, ägda servrar och meddelanden. Detta uppfyller GDPR-krav på dataportabilitet och rätten till åtkomst, vilket är ett explicit krav i kursbedömningen för att hantera användardata ansvarsfullt.
 
 Kontoradering sker via samma inställningssida och raderar användarens profil samt alla personuppgifter. Istället för att radera meddelanden helt, vilket skulle förstöra konversationshistoriken för andra medlemmar, anonymiseras de genom att ta bort länken till användarkontot. Anonymiserade meddelanden visas som "[Deleted User]" i gränssnittet, vilket följer samma mönster som Discord och Reddit använder för att balansera GDPR-compliance med användbarhet.
 
@@ -149,15 +187,27 @@ Meddelandeborttagning följer en fyrstegsregel: alla kan radera sina egna meddel
 
 ## Beslut I Arkitekturen
 
-Valet av Azure Static Web Apps (SWA) som primär plattform möjliggör användning av Managed Authentication, vilket innebär att autentiseringen sker på edge-nivå via den inbyggda infrastrukturen. Genom att delegera identitetshanteringen uppnås en strikt separation mellan autentisering (plattformstyrd) och auktorisering (applikationsstyrd), vilket minskar attackytan då hantering av känsliga inloggningsuppgifter undviks helt. Detta medger fullt fokus på Role-Based Access Control (RBAC) inom affärslogiken, där verifierade "claims" från Azure används för att styra behörigheter på ett säkert och spårbart sätt.
+Azure var given som krav, men inom det hade vi val att göra. Static Web Apps med Next.js i Hybrid Mode kändes rätt eftersom det löser autentiseringen åt mig. Istället för att bygga OAuth-flows själv tar Azure hand om det på edge-nivå och ger mig en header med användardata. Det betyder att jag kan fokusera på RBAC-logiken (alltså vem som får göra vad) istället för att tampas med token-refresh och session management. Autentisering blir infrastrukturens problem, auktorisering blir min kod.
 
-För realtidsuppdateringar av meddelanden används 2-sekunders polling istället för WebSockets. Detta beslut baserades på att Azure Static Web Apps kräver separat Azure SignalR-tjänst för WebSocket-support vilket innebär extra kostnad och komplexitet. För projektets omfattning med begränsat antal samtidiga användare är polling-lösningen tillräcklig.
+Det blev en monolitisk app istället för separation mellan frontend och backend. Next.js API-routes kör som serverless functions i samma deployment som frontend-koden. I en traditionell setup hade jag byggt en .NET Web API som egen tjänst och pekat React mot den, men här är allt i en enhet. Det förenklar deployment och minskar antalet rörliga delar, men innebär också att APIM måste konfigureras som reverse proxy framför hela appen istället för att länka direkt till en backend-tjänst.
 
-Zod valdes för input-validering eftersom biblioteket genererar TypeScript-typer direkt från valideringsscheman, vilket säkerställer att frontend och backend delar samma type definitions. Detta eliminerar risk för type mismatches mellan API-kontrakt och implementering, och används istället för typiska DTOs (som är vanliga i .NET backend).
+För realtidsuppdatering av meddelanden går appen ut och hämtar nya meddelanden var 2:a sekund. Det är inte WebSockets, och det var ett medvetet val. Azure SWA stöder inte WebSockets utan att dra in Azure SignalR som separat tjänst, vilket betyder mer config, mer kostnad, och mer komplexitet. För en chattapp med några samtidiga användare räcker polling. Det är inte elegant, men det fungerar och håller stacken enkel.
+
+Zod för validering var egentligen inte bara ett val för validering. Det var ett val för type safety. Zod-scheman genererar TypeScript-typer automatiskt, vilket betyder att frontend och backend delar exakt samma förståelse för vad som är giltig data. Om jag ändrar ett schema uppdateras typerna överallt, och kompilatorn säger till om något inte stämmer. Det kändes mer robust än att ha separata DTO-klasser som kan drifta isär.
+
+All styling lever i en enda fil (`theme.scss`) istället för att spridas över komponentmoduler eller Tailwind. Det var ett pragmatiskt val. Med den korta tiden jag hade, fanns inget utrymme att bygga komponent-level CSS-arkitektur. En fil med utilities och komponentmönster var snabbare att scaffolda och hålla konsistent. Det offrar komponentinkapsling och skapar risk för namnkonflikter i större skala, men för ett kursprojekt (1021 rader CSS) fungerade det. Bättre att leverera med global styling än att spendera tid på modularisering som projektet inte behövde.
+
+RBAC-funktionerna är rena funktioner som tar ID:n och returnerar en boolean. Inga klasser, ingen state, bara `canUserDoThis(userId, resourceId)`. Det gör dem lätta att testa och lätta att förstå. Permissions-matrisen lever i kod, inte i en databas-tabell, vilket betyder att logiken är synlig och versionshanterad. Om permissions behöver bli mer dynamiska i framtiden måste designen ändras, men för detta projekts scope fungerar det.
+
+Säkerheten byggdes i lager. Rate limiting på infrastrukturnivå stoppar flood innan det når koden. Headers blockerar XSS och clickjacking på protokollnivå. Prisma förhindrar SQL-injection genom prepared statements. Zod validerar input. RBAC kollar permissions. Inget lager är perfekt, men tillsammans täcker de det mesta. Tanken var att inte lita på en enskild mekanism, utan bygga redundans.
+
+Största utmaningen för mig var att få Next.js middleware att sluta skapa redirect-loops med Azure SWA:s auth i början. Lösningen blev att ta bort middleware helt och låta Azure hantera routing-skydd via `staticwebapp.config.json`. Det är Azure:s rekommenderade mönster, men det tog ett tag att inse.
+
+Projektet är inte perfekt. Polling istället för WebSockets är inte optimal. SCSS blev en monolitisk fil. APIM-config är applicerad manuellt till Azure Portalen i nuläget, där taknken var att automatisera och synca via pipeline. Men det fungerar, det är säkert, det är testat, och det deployar stabilt. För ett kursprojekt som ska visa att man förstår DevOps, säkerhet och molndrift känns det tillräckligt.
 
 ## Drift & Miljö
 
-###¤ Produktionsmiljö
+#### Produktionsmiljö
 
 Applikationen körs i Azure Static Web Apps och uppdateras automatiskt vid varje merge till `main`-grenen. Azure hanterar global CDN-distribution, TLS-certifikat, edge-level autentisering och hybrid rendering (statiska assets + SSR + API routes).
 
@@ -172,11 +222,12 @@ Migrationer körs automatiskt i CI/CD-pipeline före deployment, liknar Migratio
 
 ## Testning
 
-Projektet innehåller omfattande testtäckning med 59 enhetstester via Vitest-ramverket, fördelade över tre huvudområden:
+Projektet innehåller omfattande testtäckning med 59 enhetstester via Vitest-ramverket, fördelade över fyra huvudområden:
 
-- **RBAC-funktioner** (18 BDD-scenarion): Verifierar alla behörighetsregler för message/member/role-hantering
+- **RBAC-funktioner** (18 tester): Verifierar alla behörighetsregler för message/member/role-hantering enligt BDD-scenarion
 - **Zod-validering** (25 tester): Säkerställer korrekt input-validering och skydd mot injection-attacker
 - **Invite-systemet** (13 tester): Bekräftar kodgenerering, join-flöde och säkerhetslogik
+- **Sanity-tester** (3 tester): Grundläggande smoke tests för core-funktionalitet
 
 Testsviten körs automatiskt i CI/CD-pipeline och blockerar deployment vid fel.
 
@@ -196,7 +247,7 @@ Arkitektur kompromisser inkluderar polling istället för WebSockets för enkelh
 
 ## Installation och Lokal Utveckling
 
-Projektet kräver Node.js 20 eller senare samt pnpm som package manager. Efter att ha klonat repository installeras dependencies med `pnpm install`. Databas-konfiguration sker via `.env` fil med `DATABASE_URL` och `DIRECT_URL` som pekar mot PostgreSQL-instans. Databasmigrationer körs med `pnpm exec prisma migrate deploy` följt av `pnpm exec prisma generate` för att generera Prisma client. Utvecklingsserver startas med `pnpm dev` och körs på localhost:3000.
+Projektet kräver Node.js 20 eller senare samt pnpm som package manager. Efter att ha klonat repository installeras dependencies med `pnpm install`. Databas-konfiguration sker via `.env` fil med `DATABASE_URL` och `DIRECT_URL` som pekar mot PostgreSQL-instans i Supabase. Databasmigrationer körs med `pnpm exec prisma migrate deploy` följt av `pnpm exec prisma generate` för att generera Prisma client. Utvecklingsserver startas med `pnpm dev` och körs på localhost:3000.
 
 I utvecklingsläge används en mock-användare vilket eliminerar behovet av OAuth-konfiguration lokalt, som är praktiskt omöjligt pga säkerhetsskäl (localhost istället för produktion domän).
 
