@@ -22,23 +22,11 @@ Projektet är driftsatt på Azure Static Web Apps i Hybrid Mode, vilket kombiner
 
 ## Arkitektur och Säkerhet
 
-### Auth
-
-Azure Static Web Apps hanterar autentisering på edge-nivå genom att använda en `x-ms-client-principal` header vid varje request. Applikationen parsar denna header och synkroniserar användare med databasen vid första inloggning (Just-In-Time provisioning). Detta arkitekturmönster, som Azure kallar "Gold Standard", flyttar autentiseringslogik från applikationslager till infrastrukturlager.
-
-Rollbaserad åtkomstkontroll (RBAC) implementeras genom nio rena funktioner i `src/lib/rbac.ts`. Varje funktion tar användar-ID och resurs-ID som parametrar och returnerar en boolean efter att ha verifierat behörighet mot databasen. Detta designmönster möjliggör enhetstestning utan mock-databas och håller auktoriseringslogik separerad från business logic.
-
-### Säkerhetsheaders och Input-validering
-
-Säkerhetsheaders konfigureras i `staticwebapp.config.json` och inkluderar Content Security Policy, HSTS, X-Frame-Options och andra OWASP-rekommenderade headers. CSP-policyn tillåter endast scripts från samma origin (domän).
-
-All input från användare valideras med Zod-scheman före databas operationer. Varje API-endpoint parsar request body genom ett schema som definierar tillåtna fält, datatyper, och constraints. Valideringsfel returneras med specifika felmeddelanden som indikerar vilket fält som bryter mot vilken regel.
-
-### API Management och Rate Limiting
+### API Management
 
 Azure API Management fungerar som reverse proxy framför Static Web App, vilket möjliggör infrastruktur-nivå säkerhet. APIM applicerar rate limiting baserat på IP-adress (15 anrop per 60 sekunder) innan trafik når Next.js-applikationen. Detta skyddar mot DoS/Flood-attacker och exponerar `x-rate-limit-remaining` header för klienter. Eftersom Azure SWA i Next.js Hybrid Mode inte stöder backend linking konfigureras APIM som front-proxy istället, vilket är enterprise-standard mönster för API gateway-krav.
 
-## Teknisk Struktur & Navigation
+## Navigation
 
 Projektet är uppbyggt för att maximera separation av ansvarsområden (Modularitet).
 
@@ -101,13 +89,17 @@ Om något steg misslyckas blockeras merge och deployment automatiskt.
 
 OIDC (OpenID Connect) används för autentisering mellan GitHub Actions och Azure. Istället för att lagra statiska API-tokens i repository genererar GitHub dynamiska ID-tokens som löper ut efter fem minuter. Detta eliminerar risken för läckta credentials och följer zero-trust principer.
 
-## Säkerhet & Integritet
-
-Säkerhet är integrerat tidigt i utvecklingsprocessen och genomgår hela appen.
-
 ### Autentisering
 
-Hanteras via Azure Static Web Apps inbyggda identitetshantering (Google OAuth). Azure hanterar hela OAuth-flödet, sessionshantering och cookie-säkerhet på edge-nivå. Next.js läser endast identity-information från injicerade headers och synkroniserar användare till databas via Just-In-Time-mönster, vilket innebär att användaren skapas intern i databasen när Google inloggningen är lyckad. Appen i sig hanterar bara behörigheter (Authorization) medan Azure hanterar autentiseringen (Authentication) vilket är en standard inom enterprise miljöer och minskar chansen för stulna lösenord via attacker.
+Azure Static Web Apps hanterar autentisering på edge-nivå genom att använda en `x-ms-client-principal` header vid varje request. Applikationen parsar denna header och synkroniserar användare med databasen vid första inloggning (Just-In-Time provisioning). Detta arkitekturmönster, som Azure kallar "Gold Standard", flyttar autentiseringslogik från applikationslager till infrastrukturlager.
+
+Rollbaserad åtkomstkontroll (RBAC) implementeras genom nio rena funktioner i `src/lib/rbac.ts`. Varje funktion tar användar-ID och resurs-ID som parametrar och returnerar en boolean efter att ha verifierat behörighet mot databasen. Detta designmönster möjliggör enhetstestning utan mock-databas och håller auktoriseringslogik separerad från business logic.
+
+### Säkerhetsheaders och Input-validering
+
+Säkerhetsheaders konfigureras i `staticwebapp.config.json` och inkluderar Content Security Policy, HSTS, X-Frame-Options och andra OWASP-rekommenderade headers. CSP-policyn tillåter endast scripts från samma origin (domän).
+
+All input från användare valideras med Zod-scheman före databas operationer. Varje API-endpoint parsar request body genom ett schema som definierar tillåtna fält, datatyper, och constraints. Valideringsfel returneras med specifika felmeddelanden som indikerar vilket fält som bryter mot vilken regel.
 
 ### RBAC
 
@@ -121,7 +113,7 @@ Hanteras via Azure Static Web Apps inbyggda identitetshantering (Google OAuth). 
 
 Denna matris implementeras genom funktioner som `canKickMember`, `canDeleteMessage`, och `canEditServer` vilka validerar både den agerade användarens roll och målresursens ägare innan operation tillåts.
 
-### Data Minimization och GDPR-Compliance
+### Data Minimization och GDPR
 
 Endast nödvändig persondata lagras (`email`, `azureId`, `name`). Inga känsliga attribut som IP-adresser, location data eller device fingerprints sparas. Databasschemat följer GDPR-principen om dataminimering.
 
@@ -170,7 +162,7 @@ PostgreSQL körs i Supabase med connection pooling via Prisma. Två connection s
 
 Migrationer körs automatiskt i CI/CD-pipeline före deployment, liknar Migrations med Entity Framework i .NET.
 
-## Testning och Kvalitetssäkring
+## Testning
 
 Projektet innehåller omfattande testtäckning med 59 enhetstester via Vitest-ramverket, fördelade över tre huvudområden:
 
@@ -180,11 +172,11 @@ Projektet innehåller omfattande testtäckning med 59 enhetstester via Vitest-ra
 
 Testsviten körs automatiskt i CI/CD-pipeline och blockerar deployment vid fel.
 
-## Observability och Övervakning
+## Övervakning
 
 Application Insights är aktiverat i Azure-miljön för produktionsövervakning av fel och prestanda. Telemetri samlas in automatiskt från Next.js-applikationen och Azure Static Web Apps-infrastrukturen.
 
-## GDPR och Dataskydd
+## Användarens Data Hantering
 
 Användare kan exportera all sin persondata via inställningssidan (`/settings`), vilket genererar en JSON-fil med profil, medlemskap, ägda servrar och meddelanden. Detta uppfyller GDPR:s krav på dataportabilitet och rätten till åtkomst.
 
