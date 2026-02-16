@@ -139,7 +139,7 @@ Owner kan sedan promote utvalda medlemmar till Moderator-rollen, vilket ger dem 
 
 Meddelandeborttagning följer en fyrstegsregel: alla kan radera sina egna meddelanden, Moderator och Owner kan radera gäst-meddelanden, Moderator och Owner kan radera andra moderatorers meddelanden, men endast Owner kan radera Owner-meddelanden. Denna matris implementeras både i backend-validering och frontend-UI där raderingsknappar endast visas om användaren har behörighet.
 
-## Arkitektoniska Beslut
+## Beslut I Arkitekturen
 
 Valet av Azure Static Web Apps (SWA) som primär plattform möjliggör användning av Managed Authentication, vilket innebär att autentiseringen sker på edge-nivå via den inbyggda infrastrukturen. Genom att delegera identitetshanteringen uppnås en strikt separation mellan autentisering (plattformstyrd) och auktorisering (applikationsstyrd), vilket minskar attackytan då hantering av känsliga inloggningsuppgifter undviks helt. Detta medger fullt fokus på Role-Based Access Control (RBAC) inom affärslogiken, där verifierade "claims" från Azure används för att styra behörigheter på ett säkert och spårbart sätt.
 
