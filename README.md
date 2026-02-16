@@ -53,7 +53,7 @@ Projektet är uppbyggt för att maximera separation av ansvarsområden (Modulari
 - **`.github/workflows`** - CI/CD-pipeline med quality gates (lint, audit, test, migrations, deploy)
 - **`package.json`** - Beroenden (Next.js 16, Prisma, Zod, Vitest)
 
-### CI/CD & Feature Slicing
+## CI/CD & Feature Slicing
 
 Funktionalitet har utvecklats och driftsatts i vertikala delar (t.ex. Auth, Server CRUD, Messaging). Varje feature har en dedikerad gren (`feature/*`) och en Pull Request (PR) som triggar automatiserade tester och byggsteg. Detta arbetssätt säkerställer att produktion aldrig innehåller ofärdig kod och att varje merge är en deploybar enhet. Dessutom så skapas det test-miljöer för varje PR i Azure SWA som kan testas parallelt och separat från main produktion miljön.
 
