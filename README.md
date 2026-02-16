@@ -16,13 +16,13 @@ Uppgiftskraven specificerar "circles" som användargrupper. I denna implementati
 
 ## Teknisk Stack
 
-Applikationen är byggd med Next.js 16 (App Router) och TypeScript, med Prisma ORM som databas-abstraktion mot PostgreSQL i Supabase. Autentisering hanteras av Azure Static Web Apps inbyggda identitetslager med Google OAuth, vilket eliminerar behovet av dedikerad autentiseringsmiddleware. Styling genomförs med SCSS Modules enligt kurskrav, och all input valideras med Zod-scheman både på klient och server nivå.
+Applikationen är byggd med Next.js 16 (App Router) och TypeScript, med Prisma ORM som databas-abstraktion mot PostgreSQL i Supabase. Autentisering hanteras av Azure Static Web Apps inbyggda identitetslager med Google OAuth, vilket eliminerar behovet av dedikerad autentiseringsmiddleware. Styling genomförs med SCSS Modules, och all input valideras med Zod-scheman både på klient och server nivå.
 
 Projektet är driftsatt på Azure Static Web Apps i Hybrid Mode, vilket kombinerar statisk webbhosting med server-side rendering och API-routes. CI/CD-pipelinen är implementerad via GitHub Actions med OIDC-autentisering, vilket innebär att inga långlivade secrets lagras i repot.
 
 ## Arkitektur och Säkerhet
 
-### Autentisering och Auktorisering
+### Auth
 
 Azure Static Web Apps hanterar autentisering på edge-nivå genom att använda en `x-ms-client-principal` header vid varje request. Applikationen parsar denna header och synkroniserar användare med databasen vid första inloggning (Just-In-Time provisioning). Detta arkitekturmönster, som Azure kallar "Gold Standard", flyttar autentiseringslogik från applikationslager till infrastrukturlager.
 
