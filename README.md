@@ -20,12 +20,6 @@ Applikationen är byggd med Next.js 16 (App Router) och TypeScript, med Prisma O
 
 Projektet är driftsatt på Azure Static Web Apps i Hybrid Mode, vilket kombinerar statisk webbhosting med server-side rendering och API-routes. CI/CD-pipelinen är implementerad via GitHub Actions med OIDC-autentisering, vilket innebär att inga långlivade secrets lagras i repot.
 
-## Arkitektur och Säkerhet
-
-### API Management
-
-Azure API Management fungerar som reverse proxy framför Static Web App, vilket möjliggör infrastruktur-nivå säkerhet. APIM applicerar rate limiting baserat på IP-adress (15 anrop per 60 sekunder) innan trafik når Next.js-applikationen. Detta skyddar mot DoS/Flood-attacker och exponerar `x-rate-limit-remaining` header för klienter. Eftersom Azure SWA i Next.js Hybrid Mode inte stöder backend linking konfigureras APIM som front-proxy istället, vilket är enterprise-standard mönster för API gateway-krav.
-
 ## Navigation
 
 Projektet är uppbyggt för att maximera separation av ansvarsområden (Modularitet).
@@ -85,11 +79,17 @@ Pipelinen kör sex steg i sekvens för varje Pull Request:
 
 Om något steg misslyckas blockeras merge och deployment automatiskt.
 
+## Arkitektur och Säkerhet
+
+### API Management
+
+Azure API Management fungerar som reverse proxy framför Static Web App, vilket möjliggör infrastruktur-nivå säkerhet. APIM applicerar rate limiting baserat på IP-adress (15 anrop per 60 sekunder) innan trafik når Next.js-applikationen. Detta skyddar mot DoS/Flood-attacker och exponerar `x-rate-limit-remaining` header för klienter. Eftersom Azure SWA i Next.js Hybrid Mode inte stöder backend linking konfigureras APIM som front-proxy istället, vilket är enterprise-standard mönster för API gateway-krav.
+
 ### Säkerhetsautentisering i CI/CD
 
 OIDC (OpenID Connect) används för autentisering mellan GitHub Actions och Azure. Istället för att lagra statiska API-tokens i repository genererar GitHub dynamiska ID-tokens som löper ut efter fem minuter. Detta eliminerar risken för läckta credentials och följer zero-trust principer.
 
-### Autentisering
+### Autentisering I Appen
 
 Azure Static Web Apps hanterar autentisering på edge-nivå genom att använda en `x-ms-client-principal` header vid varje request. Applikationen parsar denna header och synkroniserar användare med databasen vid första inloggning (Just-In-Time provisioning). Detta arkitekturmönster, som Azure kallar "Gold Standard", flyttar autentiseringslogik från applikationslager till infrastrukturlager.
 
