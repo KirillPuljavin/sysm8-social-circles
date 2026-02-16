@@ -24,7 +24,7 @@ Projektet är driftsatt på Azure Static Web Apps i Hybrid Mode, vilket kombiner
 
 Projektet är uppbyggt för att maximera separation av ansvarsområden (Modularitet).
 
-### Backend-struktur
+#### Backend-struktur
 
 - **`/src/app/api/servers`** - REST-endpoints för serverhantering (POST, GET, PATCH, DELETE)
 - **`/src/app/api/servers/[id]/members`** - Medlemshantering (lista, uppdatera roll, kicka)
@@ -36,7 +36,7 @@ Projektet är uppbyggt för att maximera separation av ansvarsområden (Modulari
 - **`/src/lib/validations`** - Zod-scheman för strikt validering av all input
 - **`/prisma/schema.prisma`** - Databasschema (User, Server, Member, Message, Conversation, DirectMessage)
 
-### Frontend-struktur
+#### Frontend-struktur
 
 - **`/src/app/page.tsx`** - Landningssida med marknadsföring och inloggning
 - **`/src/app/servers/page.tsx`** - Serverlista med create/delete/invite-funktionalitet
@@ -47,7 +47,7 @@ Projektet är uppbyggt för att maximera separation av ansvarsområden (Modulari
 - **`/src/components/settings`** - GDPR-komponenter (GdprActions för export och radering)
 - **`/src/styles/theme.scss`** - Single-file SCSS-arkitektur (1021 rader, WCAG AAA-compliant)
 
-### Konfiguration och infrastruktur
+#### Konfiguration och infrastruktur
 
 - **`staticwebapp.config.json`** - Azure SWA-konfiguration för routing, säkerhetsheaders (CSP, HSTS), och autentisering vid edge-nivå
 - **`.github/workflows`** - CI/CD-pipeline med quality gates (lint, audit, test, migrations, deploy)
@@ -131,6 +131,14 @@ Vid kontoradering anonymiseras användarens meddelanden istället för att rader
 
 **Rate Limiting:** Implementerat via Azure API Management som agerar reverse proxy framför applikationen. IP-baserad throttling (15 anrop per 60 sekunder) skyddar mot flood-attacker på infrastrukturnivå innan trafik når Next.js. Policy definierad i `/infra/apim/rate-limit-policy.xml`.
 
+### Användarens Data Hantering
+
+Användare kan exportera all sin persondata via inställningssidan (`/settings`), vilket genererar en JSON-fil med profil, medlemskap, ägda servrar och meddelanden. Detta uppfyller GDPR:s krav på dataportabilitet och rätten till åtkomst.
+
+Kontoradering sker via samma inställningssida och raderar användarens profil samt alla personuppgifter. Istället för att radera meddelanden helt, vilket skulle förstöra konversationshistoriken för andra medlemmar, anonymiseras de genom att ta bort länken till användarkontot. Anonymiserade meddelanden visas som "[Deleted User]" i gränssnittet, vilket följer samma mönster som Discord och Reddit använder för att balansera GDPR-compliance med användbarhet.
+
+Om användaren äger servrar raderas dessa helt med cascade delete av alla medlemmar och meddelanden i de servrarna, vilket säkerställer att ingen persondata kvarstår.
+
 ## Användarscenarier
 
 Ett typiskt flöde börjar med att en användare skapar en server genom att ange namn och välja om servern ska vara restricted (vilket begränsar gästers möjlighet att posta). Systemet genererar en unik inbjudningskod och användaren kan dela länken med andra anvöndare. När en mottagare klickar på länken autentiseras de via Google OAuth om de inte redan är inloggade, och läggs automatiskt till som Guest i servern.
@@ -149,11 +157,11 @@ Zod valdes för input-validering eftersom biblioteket genererar TypeScript-typer
 
 ## Drift & Miljö
 
-### Produktionsmiljö
+###¤ Produktionsmiljö
 
 Applikationen körs i Azure Static Web Apps och uppdateras automatiskt vid varje merge till `main`-grenen. Azure hanterar global CDN-distribution, TLS-certifikat, edge-level autentisering och hybrid rendering (statiska assets + SSR + API routes).
 
-### Databasmiljö
+#### Databasmiljö
 
 PostgreSQL körs i Supabase med connection pooling via Prisma. Två connection strings används:
 
@@ -172,17 +180,9 @@ Projektet innehåller omfattande testtäckning med 59 enhetstester via Vitest-ra
 
 Testsviten körs automatiskt i CI/CD-pipeline och blockerar deployment vid fel.
 
-### Övervakning
+#### Övervakning
 
 Application Insights är aktiverat i Azure-miljön för produktionsövervakning av fel och prestanda. Telemetri samlas in automatiskt från Next.js-applikationen och Azure Static Web Apps-infrastrukturen.
-
-## Användarens Data Hantering
-
-Användare kan exportera all sin persondata via inställningssidan (`/settings`), vilket genererar en JSON-fil med profil, medlemskap, ägda servrar och meddelanden. Detta uppfyller GDPR:s krav på dataportabilitet och rätten till åtkomst.
-
-Kontoradering sker via samma inställningssida och raderar användarens profil samt alla personuppgifter. Istället för att radera meddelanden helt, vilket skulle förstöra konversationshistoriken för andra medlemmar, anonymiseras de genom att ta bort länken till användarkontot. Anonymiserade meddelanden visas som "[Deleted User]" i gränssnittet, vilket följer samma mönster som Discord och Reddit använder för att balansera GDPR-compliance med användbarhet.
-
-Om användaren äger servrar raderas dessa helt med cascade delete av alla medlemmar och meddelanden i de servrarna, vilket säkerställer att ingen persondata kvarstår.
 
 ## Reflektion och Lärandemål
 
