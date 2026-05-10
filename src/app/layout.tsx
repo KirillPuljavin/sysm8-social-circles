@@ -5,6 +5,7 @@ import Header from "@/components/Header";
 import ConditionalFooter from "@/components/ConditionalFooter";
 import AuthCleanupGuard from "@/components/auth/AuthCleanupGuard";
 import { DebugProvider } from "@/contexts/DebugContext";
+import { ClerkProvider } from "@clerk/nextjs";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -29,6 +30,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} layout-body`}>
+        <ClerkProvider>
         <DebugProvider>
           <AuthCleanupGuard />
           <Header />
@@ -37,6 +39,7 @@ export default function RootLayout({
           </main>
           <ConditionalFooter />
         </DebugProvider>
+        </ClerkProvider>
       </body>
     </html>
   );

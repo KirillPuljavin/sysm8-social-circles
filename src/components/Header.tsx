@@ -3,6 +3,7 @@ import { getAuthenticatedUser } from "@/lib/auth";
 import Link from "next/link";
 import LogoutButton from "@/components/auth/LogoutButton";
 import DebugToggle from "@/components/DebugToggle";
+import { SignInButton, Show, UserButton } from "@clerk/nextjs";
 
 export default async function Header() {
   const headersList = await headers();
@@ -35,13 +36,15 @@ export default async function Header() {
               <LogoutButton />
             </>
           ) : (
-            <a
-              href="/.auth/login/google?post_login_redirect_uri=/&prompt=select_account"
-              className="btn btn-sm"
-            >
-              Login
-            </a>
+            <Show when="signed-out">
+              <SignInButton mode="modal">
+                <button className="btn btn-sm">Login</button>
+              </SignInButton>
+            </Show>
           )}
+          <Show when="signed-in">
+            <UserButton />
+          </Show>
         </div>
       </div>
     </header>
