@@ -24,13 +24,17 @@ export async function getAuthenticatedUser(headers: Headers): Promise<User | nul
 
   if (!header) {
     if (process.env.DEMO_MODE === "true" || process.env.NODE_ENV === "development") {
+      const cookieHeader = headers.get("cookie") || "";
+      const match = cookieHeader.match(/(?:^|;\s*)demo_user=([a-zA-Z0-9_-]{1,32})/);
+      const name = match ? match[1] : "dev";
+      const email = name + "@localhost.local";
       const mockUser = await prisma.user.upsert({
-        where: { email: "dev@localhost.local" },
+        where: { email },
         update: {},
         create: {
-          azureId: "dev-mock-123",
-          email: "dev@localhost.local",
-          name: "Dev User",
+          azureId: "mock-" + name,
+          email,
+          name: name === "dev" ? "Dev User" : name,
         },
       });
       return mockUser;
