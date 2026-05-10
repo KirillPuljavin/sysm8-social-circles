@@ -23,7 +23,7 @@ export async function getAuthenticatedUser(headers: Headers): Promise<User | nul
   const header = headers.get("x-ms-client-principal");
 
   if (!header) {
-    if (process.env.NODE_ENV === "development") {
+    if (process.env.DEMO_MODE === "true" || process.env.NODE_ENV === "development") {
       const mockUser = await prisma.user.upsert({
         where: { email: "dev@localhost.local" },
         update: {},

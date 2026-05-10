@@ -34,7 +34,7 @@ export default function LogoutButton({ className = "btn btn-ghost btn-sm" }: { c
     } catch {
       // Storage unavailable
     }
-    window.location.href = '/.auth/logout?post_logout_redirect_uri=/';
+    window.location.href = "/";
   };
 
   return (
