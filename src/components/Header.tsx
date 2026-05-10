@@ -1,7 +1,6 @@
 import { headers } from "next/headers";
 import { getAuthenticatedUser } from "@/lib/auth";
 import Link from "next/link";
-import LogoutButton from "@/components/auth/LogoutButton";
 import DebugToggle from "@/components/DebugToggle";
 import { SignInButton, Show, UserButton } from "@clerk/nextjs";
 
@@ -30,18 +29,12 @@ export default async function Header() {
 
         <div className="header-auth">
           {user && <DebugToggle />}
-          {user ? (
-            <>
-              <div className="header-user">{user.email}</div>
-              <LogoutButton />
-            </>
-          ) : (
-            <Show when="signed-out">
-              <SignInButton mode="modal">
-                <button className="btn btn-sm">Login</button>
-              </SignInButton>
-            </Show>
-          )}
+          {user && <div className="header-user">{user.email}</div>}
+          <Show when="signed-out">
+            <SignInButton mode="modal">
+              <button className="btn btn-sm">Login</button>
+            </SignInButton>
+          </Show>
           <Show when="signed-in">
             <UserButton />
           </Show>
