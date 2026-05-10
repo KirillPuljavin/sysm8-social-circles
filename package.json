@@ -9,12 +9,13 @@
     "dev": "next dev",
     "dev:swa": "swa start http://localhost:3000 --run \"next dev\" --api-devserver-url http://localhost:3000",
     "dev:next": "next dev",
-    "build": "next build",
+    "build": "prisma generate && next build",
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:ui": "vitest --ui"
+    "test:ui": "vitest --ui",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
