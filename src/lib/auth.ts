@@ -55,31 +55,6 @@ export async function getAuthenticatedUser(headers: Headers): Promise<User | nul
     }
   }
 
-  // 3. Legacy Azure SWA
-  const header = headers.get("x-ms-client-principal");
-  if (header) {
-    try {
-      const decoded = Buffer.from(header, "base64").toString("ascii");
-      const principal = JSON.parse(decoded);
-      if (principal.userRoles?.includes("authenticated")) {
-        return await prisma.user.upsert({
-          where: { email: principal.userDetails },
-          update: {
-            azureId: principal.userId,
-            name: principal.userDetails.split("@")[0],
-          },
-          create: {
-            azureId: principal.userId,
-            email: principal.userDetails,
-            name: principal.userDetails.split("@")[0],
-          },
-        });
-      }
-    } catch (error) {
-      console.error("Failed to decode x-ms-client-principal header:", error);
-    }
-  }
-
   return null;
 }
 

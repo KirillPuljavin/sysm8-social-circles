@@ -1,5 +1,6 @@
 import { headers } from "next/headers";
 import { getAuthenticatedUser } from "@/lib/auth";
+import { auth } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
 import { MemberRole } from "@prisma/client";
@@ -15,7 +16,8 @@ export default async function InvitePage({ params }: InvitePageProps) {
   const user = await getAuthenticatedUser(headersList);
 
   if (!user) {
-    redirect(`/.auth/login/google?post_login_redirect_uri=/invite/${code}`);
+    (await auth()).redirectToSignIn({ returnBackUrl: `/invite/${code}` });
+    return null;
   }
 
   const server = await prisma.server.findUnique({
