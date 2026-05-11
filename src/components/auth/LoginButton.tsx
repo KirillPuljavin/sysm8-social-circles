@@ -11,7 +11,7 @@ export default function LoginButton() {
           background: 'white',
           color: '#1f1f1f',
           border: '1px solid #dadce0',
-          display: 'flex',
+          display: 'inline-flex',
           alignItems: 'center',
           justifyContent: 'center',
           gap: '12px',
