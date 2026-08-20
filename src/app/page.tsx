@@ -59,15 +59,17 @@ export default async function Home() {
         </div>
       </section>
 
-      <section className="flex flex-col items-center justify-center text-center p-2xl">
-        <div style={{ maxWidth: '600px' }}>
-          <h2 className="text-3xl font-bold mb-md">Ready to Get Started?</h2>
-          <p className="text-secondary mb-xl">
-            Join thousands of teams already using TheCord for secure collaboration.
-          </p>
-          <LoginButton />
-        </div>
-      </section>
+      {!user && (
+        <section className="flex flex-col items-center justify-center text-center p-2xl">
+          <div style={{ maxWidth: '600px' }}>
+            <h2 className="text-3xl font-bold mb-md">Ready to Get Started?</h2>
+            <p className="text-secondary mb-xl">
+              Join thousands of teams already using TheCord for secure collaboration.
+            </p>
+            <LoginButton />
+          </div>
+        </section>
+      )}
     </main>
   );
 }
