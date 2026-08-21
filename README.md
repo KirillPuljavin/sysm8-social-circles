@@ -2,7 +2,14 @@
 
 **Kurs:** Molntjänster och säkerhet (Practical DevOps Production)
 
-**Produktionsmiljö:** [https://nice-meadow-08f13c403.2.azurestaticapps.net]
+**Produktionsmiljö:** [social-circles.portfolio.konradsystems.se](https://social-circles.portfolio.konradsystems.se)
+
+> **Not om drift (2026-08):** applikationen kördes ursprungligen på Azure Static
+> Web Apps och därefter Vercel, med databas hos Supabase. Den driftas nu i egen
+> regi: en container på en Linuxserver jag själv administrerar, med PostgreSQL
+> på samma maskin. Varje applikation ligger i eget nätverk utan väg till
+> databasen eller till övriga applikationer. Inloggning sker fortfarande via
+> Clerk. Push till `main` kör CI och driftsätter automatiskt vid grönt.
 
 ## Om Projektet
 
