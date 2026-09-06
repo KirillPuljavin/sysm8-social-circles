@@ -11,6 +11,9 @@ ENV DATABASE_URL=$DATABASE_URL
 ENV DIRECT_URL=$DIRECT_URL
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN pnpm install --frozen-lockfile
+# Gate: a known-vulnerable tree must not become an image.
+# TODO tighten to --audit-level=high once the 7 open highs are triaged.
+RUN pnpm audit --prod --audit-level critical
 RUN npx prisma generate && pnpm run build
 
 FROM node:22-slim AS runner
