@@ -22,5 +22,10 @@ ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 PORT=3000
 COPY --from=build /app/public ./public
 COPY --from=build /app/.next/standalone ./
 COPY --from=build /app/.next/static ./.next/static
+# npm has no job in a runtime image. An installer sitting in production is
+# attack surface with no upside, and its update-notifier dials
+# registry.npmjs.org on every start, which reads as an egress violation.
+RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack \
+ && rm -f /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack
 EXPOSE 3000
 CMD ["node", "server.js"]
