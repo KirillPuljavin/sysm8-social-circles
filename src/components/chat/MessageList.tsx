@@ -238,6 +238,7 @@ export default function MessageList({
 
   // Initial fetch
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void fetchMessages();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [serverId]);
@@ -304,6 +305,7 @@ export default function MessageList({
       }).length;
 
       if (unreadCount > 0) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setShowNewMessagesPopup(true);
       }
     }
